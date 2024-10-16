@@ -6,7 +6,7 @@
 source .env
 
 # Keycloak settings
-KEYCLOAK_URL="http://localhost:8080/auth"
+KEYCLOAK_URL="http://localhost/auth"
 REALM="${KEYCLOAK_REALM}"
 CLIENT_ID="pkms-client"
 CLIENT_SECRET="CbSDVXo8qI2m2OuBCoazbDvnhwCdMSwL"
@@ -52,15 +52,15 @@ debug "Access token: $ACCESS_TOKEN"
 USER_ID=$(echo "$ACCESS_TOKEN" | jq -R 'split(".")[1] | @base64d | fromjson | .sub')
 debug "User ID: $USER_ID"
 
-echo "Submitting content..."
-SUBMISSION_RESPONSE=$(curl -v -X POST "$CONTENT_SUBMISSION_URL" \
-     -H "Content-Type: application/json" \
-     -H "Authorization: Bearer $ACCESS_TOKEN" \
-     -d "{
-       \"content\": \"This is a fascinating article about AI: https://example.com/ai-article\",
-       \"user_id\": $USER_ID
-     }" 2>&1)
+# echo "Submitting content..."
+# SUBMISSION_RESPONSE=$(curl -v -X POST "$CONTENT_SUBMISSION_URL" \
+#      -H "Content-Type: application/json" \
+#      -H "Authorization: Bearer $ACCESS_TOKEN" \
+#      -d "{
+#        \"content\": \"This is a fascinating article about AI: https://example.com/ai-article\",
+#        \"user_id\": $USER_ID
+#      }" 2>&1)
 
-echo "Submission response:"
-debug "Raw submission response: $SUBMISSION_RESPONSE"
-echo "$SUBMISSION_RESPONSE" | jq '.' || echo "$SUBMISSION_RESPONSE"
+# echo "Submission response:"
+# debug "Raw submission response: $SUBMISSION_RESPONSE"
+# echo "$SUBMISSION_RESPONSE" | jq '.' || echo "$SUBMISSION_RESPONSE"
