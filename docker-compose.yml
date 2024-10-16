@@ -51,8 +51,6 @@ services:
       - auth-service
     networks:
       - pkms-network
-    volumes:
-      - ./keycloak_public_key.pem:/tmp/keycloak_public_key.pem
     environment:
       - KONG_DECLARATIVE_CONFIG=/usr/local/kong/declarative/kong.yml
       - KONG_DATABASE=off
@@ -61,6 +59,7 @@ services:
       - KONG_PROXY_ERROR_LOG=/dev/stderr
       - KONG_ADMIN_ERROR_LOG=/dev/stderr
       - KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl
+      - KEYCLOAK_REALM=${KEYCLOAK_REALM}
     ports:
       - "8000:8000"
     healthcheck:
@@ -68,6 +67,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    volumes:
+      - ./services/api-gateway/kong.yml.template:/usr/local/kong/declarative/kong.yml.template
+    entrypoint: ["/bin/sh", "-c", "/usr/local/bin/entrypoint.sh"]
 
   auth-service:
     build: ./services/auth-service
@@ -171,27 +173,27 @@ services:
     networks:
       - pkms-network
 
-  qdrant:
-    image: qdrant/qdrant:v1.1.1
-    volumes:
-      - qdrant_data:/qdrant/storage
-    ports:
-      - "${QDRANT_REST_PORT}:6333"
-      - "${QDRANT_GRPC_PORT}:6334"
-    networks:
-      - pkms-network
+  # qdrant:
+  #   image: qdrant/qdrant:v1.1.1
+  #   volumes:
+  #     - qdrant_data:/qdrant/storage
+  #   ports:
+  #     - "${QDRANT_REST_PORT}:6333"
+  #     - "${QDRANT_GRPC_PORT}:6334"
+  #   networks:
+  #     - pkms-network
 
-  neo4j:
-    image: neo4j:4.4
-    ports:
-      - "${NEO4J_HTTP_PORT}:7474"   # HTTP
-      - "${NEO4J_BOLT_PORT}:7687"   # Bolt
-    environment:
-      - NEO4J_AUTH=${NEO4J_AUTH}
-    volumes:
-      - neo4j_data:/data
-    networks:
-      - pkms-network
+  # neo4j:
+  #   image: neo4j:4.4
+  #   ports:
+  #     - "${NEO4J_HTTP_PORT}:7474"   # HTTP
+  #     - "${NEO4J_BOLT_PORT}:7687"   # Bolt
+  #   environment:
+  #     - NEO4J_AUTH=${NEO4J_AUTH}
+  #   volumes:
+  #     - neo4j_data:/data
+  #   networks:
+  #     - pkms-network
 
   message-queue:
     image: rabbitmq:3-management

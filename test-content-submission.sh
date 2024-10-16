@@ -7,7 +7,7 @@ source .env
 
 # Keycloak settings
 KEYCLOAK_URL="http://localhost:8080/auth"
-REALM="pkms-realm"
+REALM="${KEYCLOAK_REALM}"
 CLIENT_ID="pkms-client"
 CLIENT_SECRET="CbSDVXo8qI2m2OuBCoazbDvnhwCdMSwL"
 

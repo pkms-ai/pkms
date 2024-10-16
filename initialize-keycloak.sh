@@ -3,8 +3,8 @@
 # Load environment variables
 source .env
 
-KEYCLOAK_URL="http://localhost:8080/auth"
-REALM="pkms-realm"
+KEYCLOAK_URL="http://localhost/auth"
+REALM="${KEYCLOAK_REALM}"
 CLIENT_ID="pkms-client"
 
 # Wait for Keycloak to be ready
