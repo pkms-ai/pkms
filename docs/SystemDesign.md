@@ -40,7 +40,7 @@ The PKMS is designed as a collection of microservices, each responsible for spec
 
 - **Presentation Layer**: Web application (frontend) and Telegram bot for user interaction.
 - **Business Logic Layer**: Microservices handling content submission, processing, notification, and search.
-- **Data Layer**: Relational database (PostgreSQL), embedding database (Milvus), graph database (Neo4j), and message queue (RabbitMQ).
+- **Data Layer**: Relational database (PostgreSQL), embedding database (qdrant), graph database (Neo4j), and message queue (RabbitMQ).
 - **Integration Layer**: API Gateway and Reverse Proxy for routing and security.
 
 **High-Level Architecture Diagram:**
@@ -121,7 +121,7 @@ Divided into two processors:
   - Handle search queries.
   - Perform full-text and semantic searches.
   - Interface with the embedding database.
-- **Technologies**: Python, Elasticsearch, Milvus.
+- **Technologies**: Python, Elasticsearch, qdrant.
 
 ### **3.7. Content Visualization Service**
 
@@ -149,12 +149,12 @@ Divided into two processors:
   - Ensure data integrity and relationships.
 - **Technologies**: PostgreSQL 13.
 
-#### **3.9.2. Embedding Database (Milvus)**
+#### **3.9.2. Embedding Database (qdrant)**
 
 - **Purpose**: Stores vector embeddings for semantic search.
 - **Responsibilities**:
   - Perform similarity searches over embeddings.
-- **Technologies**: Milvus v2.0.
+- **Technologies**: qdrant v2.0.
 
 ### **3.10. Message Queue (RabbitMQ)**
 
@@ -247,7 +247,7 @@ pkms-project/
 │   ├── postgres/
 │   │   ├── Dockerfile
 │   │   └── init.sql
-│   ├── milvus/
+│   ├── qdrant/
 │   │   ├── Dockerfile
 │   │   └── config/
 │   └── neo4j/
@@ -318,7 +318,7 @@ services:
     depends_on:
       - message-queue
       - postgres
-      - milvus
+      - qdrant
     networks:
       - pkms-network
 
@@ -327,7 +327,7 @@ services:
     depends_on:
       - message-queue
       - postgres
-      - milvus
+      - qdrant
     networks:
       - pkms-network
 
@@ -343,7 +343,7 @@ services:
     build: ./services/search-service
     depends_on:
       - postgres
-      - milvus
+      - qdrant
       - neo4j
     networks:
       - pkms-network
@@ -375,10 +375,10 @@ services:
     networks:
       - pkms-network
 
-  milvus:
-    image: milvusdb/milvus:v2.0.0
+  qdrant:
+    image: qdrantdb/qdrant:v2.0.0
     volumes:
-      - milvus_data:/var/lib/milvus
+      - qdrant_data:/var/lib/qdrant
     networks:
       - pkms-network
 
@@ -407,7 +407,7 @@ networks:
 
 volumes:
   postgres_data:
-  milvus_data:
+  qdrant_data:
   neo4j_data:
 ```
 
@@ -426,8 +426,8 @@ volumes:
 
 - **Databases**:
   - Services interact with databases to store and retrieve data.
-  - Content Processing Services write to PostgreSQL, Milvus, and Neo4j.
-  - Search Service reads from Milvus and Neo4j.
+  - Content Processing Services write to PostgreSQL, Qdrant, and Neo4j.
+  - Search Service reads from Qdrant and Neo4j.
 
 - **Reverse Proxy**:
   - Exposes services to the external network.
@@ -444,7 +444,7 @@ volumes:
   - **Frameworks**: FastAPI, Express.js
 - **Databases**:
   - **Relational**: PostgreSQL
-  - **Embedding**: Milvus
+  - **Embedding**: qdrant
   - **Graph**: Neo4j
 - **Messaging**:
   - **Message Broker**: RabbitMQ

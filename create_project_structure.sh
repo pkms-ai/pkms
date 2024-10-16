@@ -25,10 +25,10 @@ for subservice in web-article-processor youtube-video-processor; do
 done
 
 # Create databases directories and files
-mkdir -p databases/{postgres,milvus,neo4j}
+mkdir -p databases/{postgres,qdrant,neo4j}
 touch databases/postgres/{Dockerfile,init.sql}
-touch databases/milvus/Dockerfile
-mkdir -p databases/milvus/config
+touch databases/qdrant/Dockerfile
+mkdir -p databases/qdrant/config
 touch databases/neo4j/Dockerfile
 mkdir -p databases/neo4j/conf
 

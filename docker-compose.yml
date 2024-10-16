@@ -1,119 +1,126 @@
 version: '3.8'
 
 services:
-  reverse-proxy:
-    build: ./reverse-proxy
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./reverse-proxy/nginx.conf:/etc/nginx/nginx.conf:ro
-    depends_on:
-      - api-gateway
-    networks:
-      - pkms-network
+  # Commented out services
+  # reverse-proxy:
+  #   build: ./reverse-proxy
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./reverse-proxy/nginx.conf:/etc/nginx/nginx.conf:ro
+  #   depends_on:
+  #     - api-gateway
+  #   networks:
+  #     - pkms-network
 
-  api-gateway:
-    build: ./services/api-gateway
-    depends_on:
-      - auth-service
-    networks:
-      - pkms-network
+  # api-gateway:
+  #   build: ./services/api-gateway
+  #   depends_on:
+  #     - auth-service
+  #   networks:
+  #     - pkms-network
 
-  auth-service:
-    build: ./services/auth-service
-    environment:
-      - KEYCLOAK_USER=admin
-      - KEYCLOAK_PASSWORD=admin
-    ports:
-      - "8081:8080"
-    networks:
-      - pkms-network
+  # auth-service:
+  #   build: ./services/auth-service
+  #   environment:
+  #     - KEYCLOAK_USER=admin
+  #     - KEYCLOAK_PASSWORD=admin
+  #   ports:
+  #     - "8081:8080"
+  #   networks:
+  #     - pkms-network
 
-  content-submission-service:
-    build: ./services/content-submission-service
-    depends_on:
-      - message-queue
-      - auth-service
-    networks:
-      - pkms-network
+  # content-submission-service:
+  #   build: ./services/content-submission-service
+  #   depends_on:
+  #     - message-queue
+  #     - auth-service
+  #   networks:
+  #     - pkms-network
 
-  web-article-processor:
-    build: ./services/content-processing-service/web-article-processor
-    depends_on:
-      - message-queue
-      - postgres
-      - milvus
-    networks:
-      - pkms-network
+  # web-article-processor:
+  #   build: ./services/content-processing-service/web-article-processor
+  #   depends_on:
+  #     - message-queue
+  #     - postgres
+  #     - qdrant
+  #   networks:
+  #     - pkms-network
 
-  youtube-video-processor:
-    build: ./services/content-processing-service/youtube-video-processor
-    depends_on:
-      - message-queue
-      - postgres
-      - milvus
-    networks:
-      - pkms-network
+  # youtube-video-processor:
+  #   build: ./services/content-processing-service/youtube-video-processor
+  #   depends_on:
+  #     - message-queue
+  #     - postgres
+  #     - qdrant
+  #   networks:
+  #     - pkms-network
 
-  notification-service:
-    build: ./services/notification-service
-    depends_on:
-      - message-queue
-      - auth-service
-    networks:
-      - pkms-network
+  # notification-service:
+  #   build: ./services/notification-service
+  #   depends_on:
+  #     - message-queue
+  #     - auth-service
+  #   networks:
+  #     - pkms-network
 
-  search-service:
-    build: ./services/search-service
-    depends_on:
-      - postgres
-      - milvus
-      - neo4j
-    networks:
-      - pkms-network
+  # search-service:
+  #   build: ./services/search-service
+  #   depends_on:
+  #     - postgres
+  #     - qdrant
+  #     - neo4j
+  #   networks:
+  #     - pkms-network
 
-  content-visualization-service:
-    build: ./services/content-visualization-service
-    depends_on:
-      - postgres
-    networks:
-      - pkms-network
+  # content-visualization-service:
+  #   build: ./services/content-visualization-service
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - pkms-network
 
-  web-application:
-    build: ./services/web-application
-    ports:
-      - "3000:80"
-    depends_on:
-      - api-gateway
-    networks:
-      - pkms-network
+  # web-application:
+  #   build: ./services/web-application
+  #   ports:
+  #     - "3000:80"
+  #   depends_on:
+  #     - api-gateway
+  #   networks:
+  #     - pkms-network
 
+  # Database services
   postgres:
     image: postgres:13
     environment:
-      - POSTGRES_USER=pkms_user
-      - POSTGRES_PASSWORD=pkms_pass
-      - POSTGRES_DB=pkms_db
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "${POSTGRES_PORT}:5432"
     networks:
       - pkms-network
 
-  milvus:
-    image: milvusdb/milvus:v2.0.0
+  qdrant:
+    image: qdrant/qdrant:v1.1.1
     volumes:
-      - milvus_data:/var/lib/milvus
+      - qdrant_data:/qdrant/storage
+    ports:
+      - "${QDRANT_REST_PORT}:6333"
+      - "${QDRANT_GRPC_PORT}:6334"
     networks:
       - pkms-network
 
   neo4j:
-    image: neo4j:latest
+    image: neo4j:4.4
     ports:
-      - "7474:7474"   # HTTP
-      - "7687:7687"   # Bolt
+      - "${NEO4J_HTTP_PORT}:7474"   # HTTP
+      - "${NEO4J_BOLT_PORT}:7687"   # Bolt
     environment:
-      - NEO4J_AUTH=neo4j/password
+      - NEO4J_AUTH=${NEO4J_AUTH}
     volumes:
       - neo4j_data:/data
     networks:
@@ -122,8 +129,8 @@ services:
   message-queue:
     image: rabbitmq:3-management
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "${RABBITMQ_PORT}:5672"
+      - "${RABBITMQ_MANAGEMENT_PORT}:15672"
     networks:
       - pkms-network
 
@@ -132,5 +139,5 @@ networks:
 
 volumes:
   postgres_data:
-  milvus_data:
+  qdrant_data:
   neo4j_data:
