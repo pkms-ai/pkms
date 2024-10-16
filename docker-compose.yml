@@ -31,13 +31,18 @@ services:
   #   networks:
   #     - pkms-network
 
-  # content-submission-service:
-  #   build: ./services/content-submission-service
-  #   depends_on:
-  #     - message-queue
-  #     - auth-service
-  #   networks:
-  #     - pkms-network
+  content-submission-service:
+    build: 
+      context: ./services/content-submission-service
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - message-queue
+    networks:
+      - pkms-network
 
   # web-article-processor:
   #   build: ./services/content-processing-service/web-article-processor
@@ -129,8 +134,8 @@ services:
   message-queue:
     image: rabbitmq:3-management
     ports:
-      - "${RABBITMQ_PORT}:5672"
-      - "${RABBITMQ_MANAGEMENT_PORT}:15672"
+      - "5672:5672"
+      - "15672:15672"
     networks:
       - pkms-network
 
