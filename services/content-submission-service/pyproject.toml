@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "content-submission-service"
+version = "0.1.0"
+description = "Content submission service for classifying and processing user-submitted content"
+authors = ["Nguyen Tran <merlinvn@gmail.com>"]
+readme = "README.md"
+packages = [{ include = "src" }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.115.2"
+uvicorn = "^0.32.0"
+openai = "^1.51.2"
+pydantic = "^2.9.2"
+aio-pika = "^9.4.3"
+pydantic-settings = "^2.6.0"
+
+[tool.poetry.scripts]
+start = "src.main:start"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

@@ -1,10 +1,23 @@
-FROM python:3.9-slim
+FROM python:3.11-slim
+
+# Install poetry
+RUN pip install poetry
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy only pyproject.toml and poetry.lock first to cache dependencies
+COPY pyproject.toml poetry.lock* ./
 
-COPY src/ .
+# Install dependencies
+RUN poetry install
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Copy the rest of the project, including the src/ directory
+COPY . .
+
+# Set Python path
+ENV PYTHONPATH=/app
+
+# Run the application
+CMD ["poetry", "run", "python", "-m", "src.main"]
+
+
