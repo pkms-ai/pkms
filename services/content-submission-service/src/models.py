@@ -6,9 +6,12 @@ class ContentType(str, Enum):
     WEB_ARTICLE = "web_article"
     YOUTUBE_VIDEO = "youtube_video"
     BOOKMARK = "bookmark"
+    UNKNOWN = "unknown"
+
+
+class ContentClassification(BaseModel):
+    content_type: ContentType
+    url: Optional[str] = None
 
 class ContentSubmission(BaseModel):
     content: str
-    user_id: str
-    content_type: Optional[ContentType] = None
-    url: Optional[HttpUrl] = None
