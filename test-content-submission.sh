@@ -6,13 +6,13 @@
 source .env
 
 # Keycloak settings
-KEYCLOAK_URL="http://localhost/auth"
+KEYCLOAK_URL="${KEYCLOAK_URL:-http://localhost/auth}"
 REALM="${KEYCLOAK_REALM}"
-CLIENT_ID="pkms-client"
-CLIENT_SECRET="CbSDVXo8qI2m2OuBCoazbDvnhwCdMSwL"
+CLIENT_ID="${KEYCLOAK_CLIENT_ID}"
+CLIENT_SECRET="${KEYCLOAK_CLIENT_SECRET}"
 
 # Content submission settings
-CONTENT_SUBMISSION_URL="http://localhost/api/content-submission/submit"
+CONTENT_SUBMISSION_URL="${CONTENT_SUBMISSION_URL:-http://localhost/api/content-submission/submit}"
 
 # Debug function
 debug() {
