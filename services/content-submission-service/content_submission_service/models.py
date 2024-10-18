@@ -17,4 +17,4 @@ class ContentClassification(BaseModel):
 
 
 class ContentSubmission(BaseModel):
-    content: str = Field(..., min_length=1, max_length=10000, example="https://example.com")
+    content: str = Field(..., min_length=1, max_length=10000, json_schema_extra={"example": "https://example.com"})
