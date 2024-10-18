@@ -12,7 +12,7 @@ services:
       - pkms-network
 
   api-gateway:
-    build: ./services/api-gateway
+    image: kong:latest
     depends_on:
       - content-submission-service
     networks:
