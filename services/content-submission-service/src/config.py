@@ -5,8 +5,8 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     RABBITMQ_URL: str = "amqp://guest:guest@message-queue:5672/"
-    CORS_ORIGINS: List[str] = ["http://localhost:3000"]  # Default value
-    OPENAI_API_KEY: str = "openai-api-key"
+    CORS_ORIGINS: List[str] = ["http://localhost:3000"]
+    OPENAI_API_KEY: str
     ENVIRONMENT: str = "development"
     RETRY_ATTEMPTS: int = 3
     RETRY_DELAY: int = 5  # seconds

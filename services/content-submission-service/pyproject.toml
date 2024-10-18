@@ -3,7 +3,6 @@ name = "content-submission-service"
 version = "0.1.0"
 description = "Content submission service for classifying and processing user-submitted content"
 authors = ["Nguyen Tran <merlinvn@gmail.com>"]
-readme = "README.md"
 packages = [{ include = "src" }]
 
 [tool.poetry.dependencies]
@@ -21,3 +20,16 @@ start = "src.main:start"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.5"
+black = "^21.9b0"
+flake8 = "^3.9.2"
+mypy = "^0.910"
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.mypy]
+ignore_missing_imports = true

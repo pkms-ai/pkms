@@ -1,9 +1,10 @@
 from openai import OpenAI
-from .models import ContentClassification
+from .models import ContentClassification, ContentType
 from .config import settings
+import logging
 
 
-def classify_content(input_text: str) -> ContentClassification | None:
+def classify_content(input_text: str) -> ContentClassification:
     client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
     prompt = """
@@ -19,18 +20,18 @@ def classify_content(input_text: str) -> ContentClassification | None:
 - If the URL is unclear whether it's a web article or a general website bookmark, default to BOOKMARK unless clear evidence suggests otherwise.
 """
 
-    completion = client.beta.chat.completions.parse(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": input_text},
-        ],
-        response_format=ContentClassification,
-    )
+    try:
+        completion = client.beta.chat.completions.parse(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": prompt},
+                {"role": "user", "content": input_text},
+            ],
+            response_format=ContentClassification,
+        )
 
-    print(completion)
-    print(completion.choices[0].message.content)
-
-    classified_content = completion.choices[0].message.parsed
-
-    return classified_content
+        classified_content = completion.choices[0].message.parsed
+        return classified_content
+    except Exception as e:
+        logging.error(f"Error classifying content: {e}")
+        return ContentClassification(content_type=ContentType.UNKNOWN)

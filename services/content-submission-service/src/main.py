@@ -2,6 +2,8 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import socket
+import logging
+import sys
 
 from .config import settings
 from .routes import router
@@ -20,21 +22,28 @@ app.add_middleware(
 # Include routes
 app.include_router(router)
 
-def start():
-    env = settings.ENVIRONMENT or "development"
-    host = "0.0.0.0"
-    port = settings.PORT or 8000
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
-    print(f"CORS origins: {settings.cors_origins}")  # Debug print
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+
+def start():
+    env = settings.ENVIRONMENT
+    host = "0.0.0.0"
+    port = settings.PORT
+
+    logger.info(f"Starting server in {env} mode")
+    logger.info(f"CORS origins: {settings.cors_origins}")
 
     try:
         if env == "development":
             uvicorn.run("src.main:app", host=host, port=port, reload=True)
         else:
-            uvicorn.run("src.main:app", host=host, port=port)
+            uvicorn.run(app, host=host, port=port)
     except Exception as e:
-        print(f"Error starting the server: {e}")
-        import sys
+        logger.error(f"Error starting the server: {e}")
         sys.exit(1)
 
 if __name__ == "__main__":
