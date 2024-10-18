@@ -3,7 +3,7 @@ name = "content-submission-service"
 version = "0.1.0"
 description = "Content submission service for classifying and processing user-submitted content"
 authors = ["Nguyen Tran <merlinvn@gmail.com>"]
-packages = [{ include = "content_submission_service" }]
+packages = [{ include = "content_submission_service", from = "src" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
@@ -38,6 +38,5 @@ ignore_missing_imports = true
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
-markers = [
-    "integration: marks tests as integration tests",
-]
+markers = ["integration: marks tests as integration tests"]
+
