@@ -61,7 +61,7 @@ RUN --mount=type=cache,target=/root/.cache \
 # copy project requirement files here to ensure they will be cached.
 WORKDIR $PYSETUP_PATH
 COPY pyproject.toml poetry.lock ./
-COPY src ./src
+COPY content_submission_service ./content_submission_service
 
 # install runtime deps - uses $POETRY_VIRTUALENVS_IN_PROJECT internally
 RUN --mount=type=cache,target=/root/.cache \
@@ -89,7 +89,7 @@ WORKDIR /app
 COPY . .
 
 EXPOSE 8000
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "content_submission_service.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 
 ################################
@@ -101,4 +101,4 @@ ENV FASTAPI_ENV=production
 COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 COPY . /app/
 WORKDIR /app
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "content_submission_service.main:app", "--host", "0.0.0.0", "--port", "8000"]
