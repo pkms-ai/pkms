@@ -1,6 +1,6 @@
 import pytest
 from pydantic import ValidationError
-from common_lib.models import ContentSubmission, ContentClassification, ContentType
+from common_lib.models import ContentSubmission, ClassifiedContent, ContentType
 
 
 def test_content_submission_valid():
@@ -14,7 +14,7 @@ def test_content_submission_invalid():
 
 
 def test_content_classification():
-    classification = ContentClassification(
+    classification = ClassifiedContent(
         content_type=ContentType.WEB_ARTICLE, url="https://example.com"
     )
     assert classification.content_type == ContentType.WEB_ARTICLE

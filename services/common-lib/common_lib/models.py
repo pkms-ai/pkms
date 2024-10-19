@@ -11,10 +11,15 @@ class ContentType(str, Enum):
     UNKNOWN = "unknown"
 
 
-class ContentClassification(BaseModel):
+class ClassifiedContent(BaseModel):
     content_type: ContentType
     url: Optional[str] = None
 
 
 class ContentSubmission(BaseModel):
-    content: str = Field(..., min_length=1, max_length=10000, json_schema_extra={"example": "https://example.com"})
+    content: str = Field(
+        ...,
+        min_length=1,
+        max_length=10000,
+        json_schema_extra={"example": "https://example.com"},
+    )

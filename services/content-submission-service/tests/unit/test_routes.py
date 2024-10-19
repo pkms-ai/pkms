@@ -2,7 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch
 from content_submission_service.main import app
-from common_lib.models import ContentType, ContentClassification
+from common_lib.models import ContentType, ClassifiedContent
 
 client = TestClient(app)
 
@@ -12,7 +12,7 @@ client = TestClient(app)
 @patch("content_submission_service.routes.publish_to_queue")
 async def test_submit_content(mock_publish, mock_classify):
     # Mock the classify_content function
-    mock_classify.return_value = ContentClassification(
+    mock_classify.return_value = ClassifiedContent(
         content_type=ContentType.WEB_ARTICLE, url="https://example.com"
     )
 
@@ -47,7 +47,7 @@ async def test_submit_content(mock_publish, mock_classify):
 @patch("content_submission_service.routes.publish_to_queue")
 async def test_submit_content_unknown(mock_publish, mock_classify):
     # Mock classify_content to return UNKNOWN
-    mock_classify.return_value = ContentClassification(content_type=ContentType.UNKNOWN)
+    mock_classify.return_value = ClassifiedContent(content_type=ContentType.UNKNOWN)
 
     response = client.post("/submit", json={"content": "some random text"})
 

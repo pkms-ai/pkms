@@ -30,11 +30,11 @@ async def submit_content(submission: ContentSubmission):
 
         logger.info(f"Classified content: {classified_content}")
 
-        queue_name = f"{classified_content.content_type}_queue"
+        queue_name = f"{classified_content.content_type.value}_queue"
 
         for attempt in range(settings.RETRY_ATTEMPTS):
             try:
-                await publish_to_queue(queue_name, submission.model_dump())
+                await publish_to_queue(queue_name, classified_content.model_dump())
                 break
             except Exception as e:
                 logger.warning(f"Attempt {attempt + 1} failed: {e}")
