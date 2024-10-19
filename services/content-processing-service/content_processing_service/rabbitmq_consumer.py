@@ -15,8 +15,12 @@ class RabbitMQConsumer:
 
     async def connect(self):
         if not self.connection or self.connection.is_closed:
-            self.connection = await aio_pika.connect_robust(settings.RABBITMQ_URL)
+            self.connection = await aio_pika.connect_robust(
+                settings.RABBITMQ_URL,
+                heartbeat=60  # Set heartbeat interval to 60 seconds
+            )
             self.channel = await self.connection.channel()
+            await self.channel.set_qos(prefetch_count=1)  # Explicitly set prefetch count
             logger.info("Connected to RabbitMQ")
 
     async def setup_queue(self):
@@ -24,15 +28,20 @@ class RabbitMQConsumer:
         logger.info("Declared queue: classified_queue")
 
     async def process_message(self, message: aio_pika.IncomingMessage):
-        async with message.process():
-            try:
-                body = message.body.decode()
-                content = json.loads(body)
-                logger.info(f"Received message: {content}")
-                result = process_content(content)
-                logger.info(f"Processed result: {result}")
-            except Exception as e:
-                logger.error(f"Error processing message: {e}")
+        try:
+            body = message.body.decode()
+            content = json.loads(body)
+            logger.info(f"Received message: {content}")
+            
+            result = await asyncio.wait_for(process_content(content), timeout=300)  # 5 minutes timeout
+            logger.info(f"Processed result: {result}")
+            await message.ack()
+        except asyncio.TimeoutError:
+            logger.error("Processing timed out")
+            await message.reject(requeue=True)
+        except Exception as e:
+            logger.error(f"Error processing message: {e}")
+            await message.reject(requeue=True)
 
     async def start_consuming(self):
         await self.queue.consume(self.process_message)
