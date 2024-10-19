@@ -71,14 +71,14 @@ services:
     networks:
       - pkms-network
 
-  db-service:
-    build: ./services/db-service
-    env_file:
-      - .env
-    depends_on:
-      - postgres
-    networks:
-      - pkms-network
+  # db-service:
+  #   build: ./services/db-service
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     - postgres
+  #   networks:
+  #     - pkms-network
 
   # web-article-processor:
   #   build: ./services/content-processing-service/web-article-processor
@@ -131,6 +131,16 @@ services:
   #   networks:
   #     - pkms-network
 
+  message-queue:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - pkms-network
+
   # Database services
   postgres:
     image: postgres:13
@@ -166,16 +176,6 @@ services:
   #     - neo4j_data:/data
   #   networks:
   #     - pkms-network
-
-  message-queue:
-    image: rabbitmq:3-management
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    networks:
-      - pkms-network
 
   # test-service:
   #   image: curlimages/curl

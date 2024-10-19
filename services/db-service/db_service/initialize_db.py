@@ -1,100 +1,59 @@
 import asyncio
 import asyncpg
-from config import settings
-import argparse
-import uuid
+from db_service.db import DatabaseConfig, initialize_database, get_db_pool
+from db_service.populate_db import populate_database
+import logging
 
-async def table_exists(conn, table_name):
-    result = await conn.fetchval(
-        """
-        SELECT EXISTS (
-            SELECT FROM information_schema.tables 
-            WHERE table_schema = 'public'
-            AND table_name = $1
-        )
-        """,
-        table_name
-    )
-    return result
+logger = logging.getLogger(__name__)
 
-async def create_content_table(conn):
-    # Create the ContentType enum
-    await conn.execute('''
-        DO $$ BEGIN
-            CREATE TYPE ContentType AS ENUM (
-                'web_article', 'youtube_video', 'publication', 'bookmark', 'unknown'
-            );
-        EXCEPTION
-            WHEN duplicate_object THEN null;
-        END $$;
-    ''')
-
-    # Create the content table with UUID as id and ContentType enum
-    await conn.execute('''
-        CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-        
-        CREATE TABLE IF NOT EXISTS content (
-            id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-            url TEXT UNIQUE NOT NULL,
-            title TEXT,
-            content_type ContentType NOT NULL,
-            description TEXT,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-        
-        CREATE INDEX IF NOT EXISTS idx_content_url ON content (url);
-    ''')
-    print("Schema created successfully!")
-
-async def update_schema(conn):
-    # Add any schema updates here
-    # For example:
-    # await conn.execute('''
-    #     ALTER TABLE content
-    #     ADD COLUMN IF NOT EXISTS new_column TEXT
-    # ''')
-    print("Schema updated successfully!")
-
-async def populate_content(conn):
-    sample_data = [
-        (str(uuid.uuid4()), "https://example.com/article1", "Sample Article 1", "web_article"),
-        (str(uuid.uuid4()), "https://example.com/article2", "Sample Article 2", "web_article"),
-        (str(uuid.uuid4()), "https://youtube.com/watch?v=abc123", "Sample YouTube Video", "youtube_video"),
-        (str(uuid.uuid4()), "https://example.com/publication1", "Sample Publication", "publication"),
-        (str(uuid.uuid4()), "https://example.com/bookmark1", "Sample Bookmark", "bookmark"),
-    ]
-
-    await conn.executemany('''
-        INSERT INTO content (id, url, title, content_type)
-        VALUES ($1::uuid, $2, $3, $4::ContentType)
-        ON CONFLICT (url) DO NOTHING
-    ''', sample_data)
-    print("Sample data populated successfully!")
-
-async def initialize_database(populate_data=False):
-    conn = await asyncpg.connect(settings.database_url)
+async def create_database_if_not_exists(db_config: DatabaseConfig):
+    system_conn = None
     try:
-        content_table_exists = await table_exists(conn, 'content')
-        
-        if not content_table_exists:
-            await create_content_table(conn)
+        system_conn = await asyncpg.connect(
+            host=db_config.host,
+            port=db_config.port,
+            user=db_config.user,
+            password=db_config.password,
+            database="postgres"
+        )
+
+        # Check if the database exists
+        exists = await system_conn.fetchval(
+            "SELECT 1 FROM pg_database WHERE datname = $1",
+            db_config.database
+        )
+
+        if not exists:
+            # Create the database if it doesn't exist
+            await system_conn.execute(f"CREATE DATABASE {db_config.database}")
+            logger.info(f"Database '{db_config.database}' created successfully")
         else:
-            await update_schema(conn)
-        
-        if populate_data:
-            await populate_content(conn)
+            logger.info(f"Database '{db_config.database}' already exists")
 
+    except Exception as e:
+        logger.error(f"Error creating database: {str(e)}")
+        raise
     finally:
-        await conn.close()
+        if system_conn:
+            await system_conn.close()
 
-def main():
-    parser = argparse.ArgumentParser(description="Initialize the database")
-    parser.add_argument("--populate-data", action="store_true", help="Populate the database with sample data")
+async def initialize_and_populate_database(db_config: DatabaseConfig, populate_data: bool = False):
+    pool = await get_db_pool(db_config)
+    try:
+        await initialize_database(pool)
+        logger.info("Database tables and indexes created successfully")
 
-    args = parser.parse_args()
+        if populate_data:
+            await populate_database(pool)
+            logger.info("Database populated with sample data")
+    finally:
+        await pool.close()
 
-    asyncio.run(initialize_database(populate_data=args.populate_data))
+async def main():
+    from db_service.config import get_database_config
+    db_config = get_database_config()
+    await create_database_if_not_exists(db_config)
+    await initialize_and_populate_database(db_config, populate_data=True)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

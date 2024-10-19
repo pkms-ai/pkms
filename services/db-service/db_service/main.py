@@ -1,9 +1,8 @@
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from .db import DatabaseConfig, get_db_pool, check_url_exists
 from .config import settings
 import asyncpg
-
-app = FastAPI()
 
 db_config = DatabaseConfig(
     host=settings.POSTGRES_HOST,
@@ -13,15 +12,25 @@ db_config = DatabaseConfig(
     database=settings.POSTGRES_DB
 )
 
-@app.on_event("startup")
-async def startup():
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
     app.state.db_pool = await get_db_pool(db_config)
-
-@app.on_event("shutdown")
-async def shutdown():
+    yield
+    # Shutdown
     await app.state.db_pool.close()
 
+app = FastAPI(lifespan=lifespan)
+
 async def get_db_pool():
+    if not hasattr(app.state, "db_pool"):
+        app.state.db_pool = await asyncpg.create_pool(
+            host=app.state.db_config.host,
+            port=app.state.db_config.port,
+            user=app.state.db_config.user,
+            password=app.state.db_config.password,
+            database=app.state.db_config.database,
+        )
     return app.state.db_pool
 
 @app.get("/check_url")
