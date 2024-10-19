@@ -2,10 +2,8 @@ import json
 import logging
 import aio_pika
 import asyncio
-from typing import Dict
 from .config import settings
 from .processors import process_content
-from common_lib.models import ContentType
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +11,7 @@ class RabbitMQConsumer:
     def __init__(self):
         self.connection = None
         self.channel = None
-        self.queues: Dict[ContentType, aio_pika.Queue] = {}
+        self.queue = None
 
     async def connect(self):
         if not self.connection or self.connection.is_closed:
@@ -21,11 +19,9 @@ class RabbitMQConsumer:
             self.channel = await self.connection.channel()
             logger.info("Connected to RabbitMQ")
 
-    async def setup_queues(self):
-        for content_type, queue_name in settings.RABBITMQ_QUEUES.items():
-            queue = await self.channel.declare_queue(queue_name, durable=True)
-            self.queues[content_type] = queue
-            logger.info(f"Declared queue: {queue_name}")
+    async def setup_queue(self):
+        self.queue = await self.channel.declare_queue("classified_queue", durable=True)
+        logger.info("Declared queue: classified_queue")
 
     async def process_message(self, message: aio_pika.IncomingMessage):
         async with message.process():
@@ -39,15 +35,14 @@ class RabbitMQConsumer:
                 logger.error(f"Error processing message: {e}")
 
     async def start_consuming(self):
-        for queue in self.queues.values():
-            await queue.consume(self.process_message)
-        logger.info("Started consuming from all queues")
+        await self.queue.consume(self.process_message)
+        logger.info("Started consuming from classified_queue")
 
     async def run(self):
         while True:
             try:
                 await self.connect()
-                await self.setup_queues()
+                await self.setup_queue()
                 await self.start_consuming()
                 
                 # Keep the consumer running, but allow for interruption

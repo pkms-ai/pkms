@@ -30,7 +30,7 @@ async def submit_content(submission: ContentSubmission):
 
         logger.info(f"Classified content: {classified_content}")
 
-        queue_name = f"{classified_content.content_type.value}_queue"
+        queue_name = "classified_queue"
 
         for attempt in range(settings.RETRY_ATTEMPTS):
             try:
