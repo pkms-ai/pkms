@@ -1,9 +1,9 @@
+import logging
+import sys
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-import socket
-import logging
-import sys
 
 from .config import settings
 from .routes import router
@@ -25,9 +25,11 @@ app.include_router(router)
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
 
 def start():
     env = settings.ENVIRONMENT
@@ -39,12 +41,15 @@ def start():
 
     try:
         if env == "development":
-            uvicorn.run("content_submission_service.main:app", host=host, port=port, reload=True)
+            uvicorn.run(
+                "content_submission_service.main:app", host=host, port=port, reload=True
+            )
         else:
             uvicorn.run(app, host=host, port=port)
     except Exception as e:
         logger.error(f"Error starting the server: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     start()

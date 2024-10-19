@@ -1,6 +1,8 @@
-import aio_pika
 import json
 import re
+
+import aio_pika
+
 from .config import settings
 
 
@@ -16,7 +18,7 @@ async def publish_to_queue(queue_name: str, message: dict):
         )
 
 
-def extract_url(content: str) -> str:
+def extract_url(content: str) -> str | None:
     # Simple regex to extract URLs
     url_pattern = re.compile(
         r"http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"

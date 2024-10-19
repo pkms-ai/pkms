@@ -4,12 +4,16 @@ version = "0.1.0"
 description = ""
 authors = ["Nguyen Tran <merlinvn@gmail.com>"]
 readme = "README.md"
-packages = [{ include = "common_lib", from = "./src" }]
+packages = [{ include = "common_lib" }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-
+pydantic = "^2.9.2"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+markers = ["integration: marks tests as integration tests"]
