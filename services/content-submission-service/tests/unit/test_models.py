@@ -1,6 +1,6 @@
 import pytest
 from pydantic import ValidationError
-from common_lib.models import ContentSubmission, ClassifiedContent, ContentType
+from content_submission_service.models import ContentSubmission, ClassifiedContent, ContentType
 
 
 def test_content_submission_valid():

@@ -1,9 +1,9 @@
 import logging
 
-from common_lib.models import ClassifiedContent, ContentType
 from openai import OpenAI
 
 from .config import settings
+from .models import ClassifiedContent, ContentType
 
 
 def classify_content(input_text: str) -> ClassifiedContent:

@@ -8,7 +8,6 @@ packages = [{ include = "content_processing_service", from = "." }]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-common_lib = { path = "../common-lib", develop = true }
 fastapi = "^0.115.2"
 uvicorn = "^0.32.0"
 openai = "^1.51.2"

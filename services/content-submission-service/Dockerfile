@@ -31,12 +31,9 @@ ENV PYTHONUNBUFFERED=1 \
     POETRY_NO_INTERACTION=1 \
     \
     # paths
-    # this is where our requirements 
-    PYSETUP_PATH="/opt/pysetup" 
-
-# have to set mannually here for poertry to work 
-ENV VENV_PATH="/opt/pysetup/content-submission-service/.venv"
-# ENV VENV_PATH="/opt/pysetup/.venv"
+    # this is where our requirements + virtual environment will live
+    PYSETUP_PATH="/opt/pysetup" \
+    VENV_PATH="/opt/pysetup/.venv"
 
 # prepend poetry and venv to path
 ENV PATH="$POETRY_HOME/bin:$VENV_PATH/bin:$PATH"
@@ -63,14 +60,12 @@ RUN --mount=type=cache,target=/root/.cache \
 # copy project requirement files here to ensure they will be cached.
 WORKDIR $PYSETUP_PATH
 
-COPY content-submission-service ./content-submission-service/
-COPY common-lib ./common-lib
-
-WORKDIR $PYSETUP_PATH/content-submission-service
+# COPY . ./
+COPY poetry.lock pyproject.toml ./
 
 # install runtime deps - uses $POETRY_VIRTUALENVS_IN_PROJECT internally
 RUN --mount=type=cache,target=/root/.cache \
-    poetry install --without=dev
+    poetry install --without=dev --no-root
 
 ################################
 # DEVELOPMENT
@@ -102,6 +97,6 @@ CMD ["uvicorn", "content_submission_service.main:start", "--host", "0.0.0.0", "-
 FROM python-base as production
 ENV FASTAPI_ENV=production
 COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
-COPY content-submission-service/ /app/
 WORKDIR /app
+COPY content_submission_service ./content_submission_service
 CMD ["uvicorn", "content_submission_service.main:start", "--host", "0.0.0.0", "--port", "8000"]

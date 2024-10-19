@@ -1,12 +1,13 @@
 import asyncio
 import logging
+import uuid
 
-from common_lib.models import ContentSubmission, ContentType
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse
 
 from .classifier import classify_content
 from .config import settings
+from .models import ContentSubmission, ContentType
 from .utils import publish_to_queue
 
 router = APIRouter()
@@ -28,6 +29,8 @@ async def submit_content(submission: ContentSubmission):
                 status_code=400, content={"detail": "Failed to classify the content"}
             )
 
+        content_id = str(uuid.uuid4())
+        classified_content.content_id = content_id
         logger.info(f"Classified content: {classified_content}")
 
         queue_name = "classified_queue"
@@ -52,8 +55,7 @@ async def submit_content(submission: ContentSubmission):
             content={
                 "message": "Content submitted successfully",
                 "status": "pending",
-                "content_type": classified_content.content_type,
-                "url": classified_content.url,
+                "content": classified_content.model_dump_json(),
             },
         )
     except Exception as e:

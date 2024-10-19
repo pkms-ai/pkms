@@ -12,6 +12,7 @@ class ContentType(str, Enum):
 
 
 class ClassifiedContent(BaseModel):
+    content_id: str
     content_type: ContentType
     url: Optional[str] = None
 

@@ -63,9 +63,7 @@ services:
   #     retries: 5
 
   content-submission-service:
-    build:
-      context: ./services
-      dockerfile: content-submission-service/Dockerfile
+    build: ./services/content-submission-service
     env_file:
       - .env
     depends_on:
