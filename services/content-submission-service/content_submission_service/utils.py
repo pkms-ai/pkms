@@ -13,7 +13,10 @@ async def publish_to_queue(queue_name: str, message: dict):
         await channel.declare_queue(queue_name, durable=True)
 
         await channel.default_exchange.publish(
-            aio_pika.Message(body=json.dumps(message).encode()),
+            aio_pika.Message(
+                body=json.dumps(message).encode(),
+                delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+            ),
             routing_key=queue_name,
         )
 

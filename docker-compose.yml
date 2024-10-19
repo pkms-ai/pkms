@@ -163,6 +163,8 @@ services:
     ports:
       - "5672:5672"
       - "15672:15672"
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - pkms-network
 
@@ -177,6 +179,7 @@ networks:
     name: pkms-network
 
 volumes:
+  rabbitmq_data:
   postgres_data:
   qdrant_data:
   neo4j_data:

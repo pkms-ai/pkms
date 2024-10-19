@@ -31,7 +31,10 @@ class RabbitMQConsumer:
     async def setup_queue(self) -> None:
         if self.channel is None:
             raise RuntimeError("Channel is not initialized")
-        self.queue = await self.channel.declare_queue("classified_queue", durable=True)
+        self.queue = await self.channel.declare_queue(
+            "classified_queue", 
+            durable=True
+        )
         logger.info("Declared queue: classified_queue")
 
     async def process_message(self, message: AbstractIncomingMessage) -> None:
