@@ -71,14 +71,14 @@ services:
     networks:
       - pkms-network
 
-  # db-service:
-  #   build: ./services/db-service
-  #   env_file:
-  #     - .env
-  #   depends_on:
-  #     - postgres
-  #   networks:
-  #     - pkms-network
+  db-service:
+    build: ./services/db-service
+    env_file:
+      - .env
+    depends_on:
+      - postgres
+    networks:
+      - pkms-network
 
   # web-article-processor:
   #   build: ./services/content-processing-service/web-article-processor

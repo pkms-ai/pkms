@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     RETRY_ATTEMPTS: int = 3
     RETRY_DELAY: int = 5  # seconds
-    PORT: int = 8000
+    PORT: int = 8003
 
     def parse_cors_origins(self, v: str | List[str]) -> List[str]:
         """Custom parser for CORS_ORIGINS."""
