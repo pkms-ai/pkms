@@ -40,8 +40,8 @@ class RabbitMQConsumer:
         """
         self.connection: Optional[AbstractConnection] = None
         self.channel: Optional[AbstractChannel] = None
-        self.content_processing_queue: Optional[AbstractQueue] = None
-        self.message_exchange: Optional[AbstractExchange] = None
+        self.input_queue: Optional[AbstractQueue] = None
+        self.main_exchange: Optional[AbstractExchange] = None
 
     async def connect(self) -> None:
         """
@@ -84,13 +84,13 @@ class RabbitMQConsumer:
             raise RuntimeError("Channel is not initialized")
 
         # Declare the message exchange
-        self.message_exchange = await self.channel.declare_exchange(
-            settings.MESSAGE_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True
+        self.main_exchange = await self.channel.declare_exchange(
+            settings.MAIN_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True
         )
 
         # Declare all necessary queues
         queues_to_declare = [
-            settings.RABBITMQ_QUEUE_NAME,
+            settings.INPUT_QUEUE,
             settings.CRAWL_QUEUE,
             settings.TRANSCRIBE_QUEUE,
             settings.ERROR_QUEUE,
@@ -99,12 +99,12 @@ class RabbitMQConsumer:
         for queue_name in queues_to_declare:
             queue = await self.channel.declare_queue(queue_name, durable=True)
             # Bind the queue to the message exchange with the appropriate routing key
-            await queue.bind(self.message_exchange, routing_key=queue_name)
+            await queue.bind(self.main_exchange, routing_key=queue_name)
             logger.info(f"Declared and bound queue: {queue_name}")
 
         # Set the content processing queue
-        self.content_processing_queue = await self.channel.get_queue(
-            settings.RABBITMQ_QUEUE_NAME
+        self.input_queue = await self.channel.get_queue(
+            settings.INPUT_QUEUE
         )
 
     async def process_message(self, message: AbstractIncomingMessage) -> None:
@@ -159,7 +159,7 @@ class RabbitMQConsumer:
         body = message.body.decode()
         content: Dict[str, Any] = json.loads(body)
 
-        if self.message_exchange is None:
+        if self.main_exchange is None:
             raise RuntimeError("Message exchange is not initialized")
 
         # Preserve existing headers if they exist, otherwise start with an empty dict
@@ -174,15 +174,15 @@ class RabbitMQConsumer:
 
         if retry_count < settings.MAX_RETRIES:
             # Requeue the message
-            await self.message_exchange.publish(
+            await self.main_exchange.publish(
                 new_message,
-                routing_key=settings.RABBITMQ_QUEUE_NAME,
+                routing_key=settings.INPUT_QUEUE,
             )
             logger.info(f"Requeued message: {content}, with retry count: {retry_count}")
         else:
             # Move to error queue
             new_message.headers["x-error-reason"] = "exceeded_max_retries"
-            await self.message_exchange.publish(
+            await self.main_exchange.publish(
                 new_message,
                 routing_key=settings.ERROR_QUEUE,
             )
@@ -193,10 +193,10 @@ class RabbitMQConsumer:
         await message.ack()
 
     async def publish_message(self, routing_key: str, message: str) -> None:
-        if self.message_exchange is None:
+        if self.main_exchange is None:
             raise RuntimeError("Message exchange is not initialized")
 
-        await self.message_exchange.publish(
+        await self.main_exchange.publish(
             aio_pika.Message(
                 body=message.encode(), delivery_mode=aio_pika.DeliveryMode.PERSISTENT
             ),
@@ -208,10 +208,10 @@ class RabbitMQConsumer:
         """
         Starts consuming messages from the content processing queue specified in the configuration.
         """
-        if self.content_processing_queue is None:
+        if self.input_queue is None:
             raise RuntimeError("Content processing queue is not initialized")
-        await self.content_processing_queue.consume(self.process_message)
-        logger.info(f"Started consuming from {settings.RABBITMQ_QUEUE_NAME}")
+        await self.input_queue.consume(self.process_message)
+        logger.info(f"Started consuming from {settings.INPUT_QUEUE}")
 
     async def run(self) -> None:
         """

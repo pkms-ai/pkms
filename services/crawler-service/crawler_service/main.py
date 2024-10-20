@@ -59,9 +59,7 @@ def start():
 
     try:
         if env == "development":
-            uvicorn.run(
-                "content_processing_service.main:app", host=host, port=port, reload=True
-            )
+            uvicorn.run("crawler_service.main:app", host=host, port=port, reload=True)
         else:
             uvicorn.run(app, host=host, port=port)
     except Exception as e:

@@ -5,7 +5,7 @@ import httpx
 from pydantic import ValidationError
 
 from .config import settings
-from .models import ClassifiedContent, ContentType
+from .models import Content, ContentType
 
 logger = logging.getLogger(__name__)
 
@@ -38,21 +38,21 @@ async def check_url_exists(url: str) -> bool:
             raise ContentProcessingError(f"Error checking URL existence: {str(e)}")
 
 
-async def process_web_article(content: ClassifiedContent) -> Tuple[str, Dict[str, Any]]:
+async def process_web_article(content: Content) -> Tuple[str, Dict[str, Any]]:
     return settings.CRAWL_QUEUE, content.model_dump()
 
 
-async def process_publication(content: ClassifiedContent) -> Tuple[str, Dict[str, Any]]:
+async def process_publication(content: Content) -> Tuple[str, Dict[str, Any]]:
     return settings.CRAWL_QUEUE, content.model_dump()
 
 
 async def process_youtube_video(
-    content: ClassifiedContent,
+    content: Content,
 ) -> Tuple[str, Dict[str, Any]]:
     return settings.TRANSCRIBE_QUEUE, content.model_dump()
 
 
-async def process_bookmark(content: ClassifiedContent) -> Tuple[str, Dict[str, Any]]:
+async def process_bookmark(content: Content) -> Tuple[str, Dict[str, Any]]:
     return settings.CRAWL_QUEUE, content.model_dump()
 
 
@@ -67,7 +67,7 @@ content_processors = {
 async def process_content(content: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
     logger.info(f"Starting content processing: {content}")
     try:
-        classified_content = ClassifiedContent.model_validate(content)
+        classified_content = Content.model_validate(content)
         logger.info(f"Processing content: {classified_content}")
         if not classified_content.url:
             raise ContentProcessingError("No content or URL provided")

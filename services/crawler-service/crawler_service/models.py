@@ -1,5 +1,5 @@
 from enum import Enum
-
+from typing import Optional
 from pydantic import BaseModel
 
 
@@ -11,7 +11,8 @@ class ContentType(str, Enum):
     UNKNOWN = "unknown"
 
 
-class ClassifiedContent(BaseModel):
+class Content(BaseModel):
     content_id: str
     content_type: ContentType
     url: str
+    raw_content: Optional[str] = None

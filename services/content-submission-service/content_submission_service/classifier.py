@@ -3,10 +3,10 @@ import logging
 from openai import OpenAI
 
 from .config import settings
-from .models import ClassifiedContent, ContentType
+from .models import Content, ContentType
 
 
-def classify_content(input_text: str) -> ClassifiedContent:
+def classify_content(input_text: str) -> Content:
     client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
     prompt = """
@@ -25,13 +25,13 @@ def classify_content(input_text: str) -> ClassifiedContent:
                 {"role": "system", "content": prompt},
                 {"role": "user", "content": input_text},
             ],
-            response_format=ClassifiedContent,
+            response_format=Content,
         )
 
         classified_content = completion.choices[0].message.parsed
         if classified_content is None:
-            return ClassifiedContent(content_type=ContentType.UNKNOWN)
+            return Content(content_type=ContentType.UNKNOWN)
         return classified_content
     except Exception as e:
         logging.error(f"Error classifying content: {e}")
-        return ClassifiedContent(content_type=ContentType.UNKNOWN)
+        return Content(content_type=ContentType.UNKNOWN)

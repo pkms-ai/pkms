@@ -10,15 +10,15 @@ class Settings(BaseSettings):
     PORT: int = 8000
 
     # Configuration options
-    RABBITMQ_QUEUE_NAME: str = "classified_queue"
+   
     CONTENT_PROCESSING_TIMEOUT: int = 300  # 5 minutes in seconds
+    MAX_RETRIES: int = 3
 
     # Queue settings
-    MESSAGE_EXCHANGE: str = "message_exchange"
+    INPUT_QUEUE: str = "crawl_queue"
+    MAIN_EXCHANGE: str = "crawler_exchange"
+    SUMMARY_QUEUE: str = "summary_queue"
     ERROR_QUEUE: str = "error_queue"
-    MAX_RETRIES: int = 3
-    CRAWL_QUEUE: str = "crawl_queue"
-    TRANSCRIBE_QUEUE: str = "transcribe_queue"
 
     # DB Service URL
     API_GATEWAY_HOST: str = "localhost"
