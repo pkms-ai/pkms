@@ -8,10 +8,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import settings
 from .rabbitmq_consumer import start_rabbitmq_consumer
-from .routes import router
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -26,6 +26,7 @@ async def lifespan(app: FastAPI):
     except asyncio.CancelledError:
         logger.info("RabbitMQ consumer has been cancelled")
 
+
 app = FastAPI(title="Content Processing Service", lifespan=lifespan)
 
 # Configure CORS
@@ -38,11 +39,15 @@ app.add_middleware(
 )
 
 # Include routes
-app.include_router(router)
+# but as the job will be handle by rabbitmq consumer
+# we don't need to include routes for now
+# app.include_router(router)
+
 
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
+
 
 def start():
     env = settings.ENVIRONMENT
@@ -62,6 +67,7 @@ def start():
     except Exception as e:
         logger.error(f"Error starting the server: {e}")
         raise
+
 
 if __name__ == "__main__":
     start()

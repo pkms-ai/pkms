@@ -6,6 +6,15 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = ["http://localhost:3000"]
     ENVIRONMENT: str = "development"
     PORT: int = 8000
+    
+    # Configuration options
+    RABBITMQ_QUEUE_NAME: str = "classified_queue"
+    CONTENT_PROCESSING_TIMEOUT: int = 300  # 5 minutes in seconds
+
+    # Queue settings
+    MESSAGE_EXCHANGE: str = "message_exchange"
+    ERROR_QUEUE: str = "error_queue"
+    MAX_RETRIES: int = 3
 
     @property
     def cors_origins(self) -> List[str]:
