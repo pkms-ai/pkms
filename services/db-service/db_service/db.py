@@ -1,8 +1,14 @@
+import logging
+
 import asyncpg
 from pydantic import BaseModel
-from enum import Enum
-from uuid import UUID, uuid4
-from typing import Optional
+
+from db_service.content_repository import ContentType
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 
 class DatabaseConfig(BaseModel):
     host: str
@@ -11,14 +17,14 @@ class DatabaseConfig(BaseModel):
     password: str
     database: str
 
-class ContentType(str, Enum):
-    WEB_ARTICLE = "web_article"
-    YOUTUBE_VIDEO = "youtube_video"
-    PUBLICATION = "publication"
-    BOOKMARK = "bookmark"
-    UNKNOWN = "unknown"
 
 async def get_db_pool(config: DatabaseConfig):
+    """
+    Create and return a connection pool for the database.
+    """
+    logger.info(
+        f"Creating database pool for {config.database} at {config.host}:{config.port}"
+    )
     return await asyncpg.create_pool(
         host=config.host,
         port=config.port,
@@ -27,10 +33,15 @@ async def get_db_pool(config: DatabaseConfig):
         database=config.database,
     )
 
+
 async def initialize_database(pool: asyncpg.Pool):
+    """
+    Initialize the database by creating necessary tables and indexes.
+    """
+    logger.info("Initializing database...")
     async with pool.acquire() as conn:
         # Create the enum type if it doesn't exist
-        await conn.execute('''
+        await conn.execute("""
             DO $$ BEGIN
                 CREATE TYPE content_type AS ENUM (
                     'web_article', 'youtube_video', 'publication', 'bookmark', 'unknown'
@@ -38,10 +49,10 @@ async def initialize_database(pool: asyncpg.Pool):
             EXCEPTION
                 WHEN duplicate_object THEN null;
             END $$;
-        ''')
+        """)
 
         # Create the content table with an index on the url column
-        await conn.execute('''
+        await conn.execute("""
             CREATE TABLE IF NOT EXISTS content (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 url TEXT UNIQUE NOT NULL,
@@ -53,79 +64,48 @@ async def initialize_database(pool: asyncpg.Pool):
             );
             
             CREATE INDEX IF NOT EXISTS idx_content_url ON content (url);
-        ''')
+        """)
+    logger.info("Database initialization complete.")
 
-async def check_url_exists(pool: asyncpg.Pool, url: str) -> bool:
-    async with pool.acquire() as conn:
-        result = await conn.fetchval("SELECT EXISTS(SELECT 1 FROM content WHERE url = $1)", url)
-    return result
 
-async def get_content_by_id(pool: asyncpg.Pool, content_id: UUID):
-    async with pool.acquire() as conn:
-        return await conn.fetchrow("SELECT * FROM content WHERE id = $1", content_id)
+async def populate_sample_database(pool: asyncpg.Pool):
+    """
+    Populate the database with sample data.
+    """
+    sample_data = [
+        {
+            "url": "https://example.com/article1",
+            "title": "Sample Article 1",
+            "content_type": ContentType.WEB_ARTICLE.value,
+        },
+        {
+            "url": "https://example.com/article2",
+            "title": "Sample Article 2",
+            "content_type": ContentType.WEB_ARTICLE.value,
+        },
+        {
+            "url": "https://example.com/video1",
+            "title": "Sample Video 1",
+            "content_type": ContentType.YOUTUBE_VIDEO.value,
+        },
+    ]
 
-async def get_content_by_url(pool: asyncpg.Pool, url: str):
-    async with pool.acquire() as conn:
-        return await conn.fetchrow("SELECT * FROM content WHERE url = $1", url)
+    try:
+        async with pool.acquire() as conn:
+            # Insert sample data
+            for item in sample_data:
+                await conn.execute(
+                    """
+                    INSERT INTO content (url, title, content_type)
+                    VALUES ($1, $2, $3::content_type)
+                    ON CONFLICT (url) DO NOTHING
+                """,
+                    item["url"],
+                    item["title"],
+                    item["content_type"],
+                )
 
-async def insert_content(
-    pool: asyncpg.Pool,
-    url: str,
-    title: str,
-    content_type: ContentType,
-    description: Optional[str] = None,
-    content_id: Optional[UUID] = None
-) -> UUID:
-    async with pool.acquire() as conn:
-        if content_id is None:
-            content_id = uuid4()
-        
-        query = """
-        INSERT INTO content (id, url, title, content_type, description)
-        VALUES ($1, $2, $3, $4::content_type, $5)
-        RETURNING id
-        """
-        
-        inserted_id = await conn.fetchval(
-            query, content_id, url, title, content_type.value, description
-        )
-        
-        return inserted_id
-
-async def update_content(
-    pool: asyncpg.Pool,
-    content_id: UUID,
-    title: Optional[str] = None,
-    content_type: Optional[ContentType] = None,
-    description: Optional[str] = None
-) -> bool:
-    async with pool.acquire() as conn:
-        update_fields = []
-        update_values = []
-        if title is not None:
-            update_fields.append("title = $1")
-            update_values.append(title)
-        if content_type is not None:
-            update_fields.append("content_type = $2::content_type")
-            update_values.append(content_type.value)
-        if description is not None:
-            update_fields.append("description = $3")
-            update_values.append(description)
-        
-        if not update_fields:
-            return False
-        
-        query = f"""
-        UPDATE content
-        SET {', '.join(update_fields)}, updated_at = CURRENT_TIMESTAMP
-        WHERE id = $4
-        """
-        update_values.append(content_id)
-        
-        result = await conn.execute(query, *update_values)
-        return result == "UPDATE 1"
-
-async def delete_content(pool: asyncpg.Pool, content_id: UUID) -> bool:
-    async with pool.acquire() as conn:
-        result = await conn.execute("DELETE FROM content WHERE id = $1", content_id)
-        return result == "DELETE 1"
+        logger.info(f"Inserted {len(sample_data)} sample items into the database")
+    except Exception as e:
+        logger.error(f"Error populating database: {str(e)}")
+        raise
