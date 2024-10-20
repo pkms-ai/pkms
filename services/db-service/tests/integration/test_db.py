@@ -10,6 +10,8 @@ from db_service.content_repository import (
     check_url_exists,
     get_content_by_url,
     insert_content,
+    update_content,
+    delete_content,
 )
 from db_service.db import (
     DatabaseConfig,
@@ -110,8 +112,12 @@ async def test_insert_and_check_content(db_pool):
     content_type = ContentType.WEB_ARTICLE
 
     # Insert content
-    content_id = await insert_content(db_pool, url, title, content_type)
-    assert isinstance(content_id, UUID)
+    inserted_content = await insert_content(db_pool, url, title, content_type)
+    assert isinstance(inserted_content, dict)
+    assert isinstance(inserted_content['id'], UUID)
+    assert inserted_content['url'] == url
+    assert inserted_content['title'] == title
+    assert inserted_content['content_type'] == content_type.value
 
     # Check if URL exists
     exists = await check_url_exists(db_pool, url)
@@ -149,5 +155,73 @@ async def test_get_content_by_url(db_pool):
     assert content["title"] == title
     assert content["content_type"] == content_type.value
 
+
+@pytest.mark.asyncio
+async def test_update_content(db_pool):
+    print("Running test_update_content")
+    url = "https://example.com/article2"
+    title = "Sample Article 2"
+    content_type = ContentType.WEB_ARTICLE
+    summary = "Original summary"
+
+    # Insert test data
+    inserted_content = await insert_content(db_pool, url, title, content_type, summary)
+    content_id = inserted_content['id']
+
+    # Update content (all fields)
+    new_title = "Updated Article 2"
+    new_content_type = ContentType.PUBLICATION
+    new_summary = "Updated summary"
+    updated_content = await update_content(db_pool, content_id, title=new_title, content_type=new_content_type, summary=new_summary)
+
+    assert updated_content is not None
+    assert updated_content['id'] == content_id
+    assert updated_content['title'] == new_title
+    assert updated_content['content_type'] == new_content_type.value
+    assert updated_content['summary'] == new_summary
+
+    # Update content (partial update)
+    partial_new_title = "Partially Updated Article 2"
+    partial_updated_content = await update_content(db_pool, content_id, title=partial_new_title)
+
+    assert partial_updated_content is not None
+    assert partial_updated_content['id'] == content_id
+    assert partial_updated_content['title'] == partial_new_title
+    assert partial_updated_content['content_type'] == new_content_type.value
+    assert partial_updated_content['summary'] == new_summary
+
+    # Verify the update
+    content = await get_content_by_url(db_pool, url)
+    assert content['title'] == partial_new_title
+    assert content['content_type'] == new_content_type.value
+    assert content['summary'] == new_summary
+
+
+@pytest.mark.asyncio
+async def test_delete_content(db_pool):
+    print("Running test_delete_content")
+    url = "https://example.com/article3"
+    title = "Sample Article 3"
+    content_type = ContentType.WEB_ARTICLE
+
+    # Insert test data
+    inserted_content = await insert_content(db_pool, url, title, content_type)
+    content_id = inserted_content['id']
+
+    # Delete content
+    deleted_content = await delete_content(db_pool, content_id)
+
+    assert deleted_content is not None
+    assert deleted_content['id'] == content_id
+    assert deleted_content['url'] == url
+    assert deleted_content['title'] == title
+    assert deleted_content['content_type'] == content_type.value
+
+    # Verify the deletion
+    content = await get_content_by_url(db_pool, url)
+    assert content is None
+
+    exists = await check_url_exists(db_pool, url)
+    assert exists is False
 
 # Add more tests as needed for other functions

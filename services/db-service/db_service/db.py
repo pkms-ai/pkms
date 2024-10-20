@@ -73,16 +73,18 @@ async def create_tables_and_indexes(pool: asyncpg.Pool):
         await conn.execute("""
             CREATE TABLE IF NOT EXISTS content (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-                url TEXT UNIQUE NOT NULL,
+                url VARCHAR(2048) UNIQUE NOT NULL,
                 title TEXT NOT NULL,
                 content_type content_type NOT NULL,
-                description TEXT,
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                summary TEXT,
+                created_at timestamptz DEFAULT CURRENT_TIMESTAMP,
+                updated_at timestamptz DEFAULT CURRENT_TIMESTAMP,
+                metadata JSONB
             );
             
             CREATE INDEX IF NOT EXISTS idx_content_url ON content (url);
         """)
+        # CREATE INDEX IF NOT EXISTS idx_content_title_trgm ON content USING gin (title gin_trgm_ops);
     logger.info("Database initialization complete.")
 
 
