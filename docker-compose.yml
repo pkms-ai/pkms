@@ -70,6 +70,15 @@ services:
       - message-queue
     networks:
       - pkms-network
+  
+  content-processing-service:
+    build: ./services/content-processing-service
+    env_file:
+      - .env
+    depends_on:
+      - message-queue
+    networks:
+      - pkms-network
 
   db-service:
     build: ./services/db-service
