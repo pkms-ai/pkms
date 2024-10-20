@@ -1,7 +1,9 @@
 from fastapi import APIRouter
+
 from .processors import process_content
 
 router = APIRouter()
+
 
 @router.post("/process")
 async def process_content_route(content: dict):

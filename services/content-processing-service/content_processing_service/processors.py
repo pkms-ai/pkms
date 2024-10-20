@@ -1,11 +1,11 @@
 import logging
-from typing import Dict, Any, Tuple
-from pydantic import ValidationError
-import httpx
-import json
+from typing import Any, Dict, Tuple
 
-from .models import ClassifiedContent, ContentType
+import httpx
+from pydantic import ValidationError
+
 from .config import settings
+from .models import ClassifiedContent, ContentType
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +18,7 @@ class ContentProcessingError(Exception):
 
 class ContentAlreadyExistsError(Exception):
     """Custom exception for content that already exists in the database."""
+
     pass
 
 
@@ -27,27 +28,14 @@ async def check_url_exists(url: str) -> bool:
     """
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.get(f"{settings.DB_SERVICE_URL}/check_url", params={"url": url})
+            response = await client.get(
+                f"{settings.db_service_url()}/check_url", params={"url": url}
+            )
             response.raise_for_status()
             return response.json().get("exists", False)
         except httpx.HTTPError as e:
             logger.error(f"Error checking URL existence: {e}")
             raise ContentProcessingError(f"Error checking URL existence: {str(e)}")
-
-
-async def process_text(content: ClassifiedContent):
-    # Implement text processing logic here
-    return f"Processed text: {content}"
-
-
-async def process_image(content: ClassifiedContent):
-    # Implement image processing logic here
-    return f"Processed image: {content}"
-
-
-async def process_video(content: ClassifiedContent):
-    # Implement video processing logic here
-    return f"Processed video: {content}"
 
 
 async def process_web_article(content: ClassifiedContent) -> Tuple[str, Dict[str, Any]]:
@@ -58,7 +46,9 @@ async def process_publication(content: ClassifiedContent) -> Tuple[str, Dict[str
     return settings.CRAWL_QUEUE, content.model_dump()
 
 
-async def process_youtube_video(content: ClassifiedContent) -> Tuple[str, Dict[str, Any]]:
+async def process_youtube_video(
+    content: ClassifiedContent,
+) -> Tuple[str, Dict[str, Any]]:
     return settings.TRANSCRIBE_QUEUE, content.model_dump()
 
 
@@ -81,11 +71,13 @@ async def process_content(content: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]
         logger.info(f"Processing content: {classified_content}")
         if not classified_content.url:
             raise ContentProcessingError("No content or URL provided")
-        
+
         # Check if the URL already exists in the database
         if await check_url_exists(classified_content.url):
-            raise ContentAlreadyExistsError(f"Content with URL {classified_content.url} already exists in the database")
-        
+            raise ContentAlreadyExistsError(
+                f"Content with URL {classified_content.url} already exists in the database"
+            )
+
         logger.debug(f"Content validated as {classified_content.content_type}")
 
         processor = content_processors.get(classified_content.content_type)

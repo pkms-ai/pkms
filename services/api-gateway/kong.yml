@@ -2,6 +2,13 @@ _format_version: "2.1"
 _transform: true
 
 services:
+  - name: db-service
+    url: http://db-service:8000
+    routes:
+      - name: db-route
+        paths:
+          - /api/db
+
   - name: content-submission-service
     url: http://content-submission-service:8000
     routes:
@@ -9,13 +16,13 @@ services:
         paths:
           - /api/content-submission
   
-  - name: db-service
-    url: http://db-service:8000
+
+  - name: content-processing-service
+    url: http://content-processing-service:8000
     routes:
-      - name: db-route
+      - name: content-processing-route
         paths:
-          - /api/db
-    
+          - /api/content-processing
 
   # - name: auth-service
   #   url: http://auth-service:8080

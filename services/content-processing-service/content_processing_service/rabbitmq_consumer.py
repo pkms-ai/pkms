@@ -5,20 +5,26 @@
 # and processes incoming content using the `process_content` function from the
 # `processors` module.
 
+import asyncio
 import json
 import logging
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+
 import aio_pika
 from aio_pika.abc import (
     AbstractChannel,
     AbstractConnection,
-    AbstractQueue,
-    AbstractIncomingMessage,
     AbstractExchange,
+    AbstractIncomingMessage,
+    AbstractQueue,
 )
-import asyncio
+
 from .config import settings
-from .processors import process_content, ContentProcessingError, ContentAlreadyExistsError
+from .processors import (
+    ContentAlreadyExistsError,
+    ContentProcessingError,
+    process_content,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -87,7 +93,7 @@ class RabbitMQConsumer:
             settings.RABBITMQ_QUEUE_NAME,
             settings.CRAWL_QUEUE,
             settings.TRANSCRIBE_QUEUE,
-            settings.ERROR_QUEUE
+            settings.ERROR_QUEUE,
         ]
 
         for queue_name in queues_to_declare:
@@ -97,7 +103,9 @@ class RabbitMQConsumer:
             logger.info(f"Declared and bound queue: {queue_name}")
 
         # Set the content processing queue
-        self.content_processing_queue = await self.channel.get_queue(settings.RABBITMQ_QUEUE_NAME)
+        self.content_processing_queue = await self.channel.get_queue(
+            settings.RABBITMQ_QUEUE_NAME
+        )
 
     async def process_message(self, message: AbstractIncomingMessage) -> None:
         try:
@@ -109,10 +117,10 @@ class RabbitMQConsumer:
                 process_content(content), timeout=settings.CONTENT_PROCESSING_TIMEOUT
             )
             logger.info(f"Processed content. Forwarding to queue: {queue_name}")
-            
+
             # Publish the processed content to the appropriate queue
             await self.publish_message(queue_name, json.dumps(processed_content))
-            
+
             await message.ack()
         except ContentAlreadyExistsError as e:
             logger.info(f"Content already exists: {str(e)}")
@@ -134,16 +142,33 @@ class RabbitMQConsumer:
         Args:
             message (AbstractIncomingMessage): The failed message from RabbitMQ.
         """
-        retry_count = message.header.headers.get("x-retry-count", 0) + 1
+        # Safely get the retry count, defaulting to 0 if header or x-retry-count doesn't exist or is invalid
+        retry_count = 0
+        if hasattr(message, "headers"):
+            retry_count_value = message.headers.get("x-retry-count")
+            if retry_count_value is not None:
+                try:
+                    if isinstance(retry_count_value, (int, str)):
+                        retry_count = int(retry_count_value)
+                    else:
+                        logger.warning(f"Unexpected type for retry count: {type(retry_count_value)}. Defaulting to 0.")
+                except ValueError:
+                    logger.warning(f"Invalid retry count in message headers: {retry_count_value}. Defaulting to 0.")
+        retry_count += 1
+
         body = message.body.decode()
         content: Dict[str, Any] = json.loads(body)
 
         if self.message_exchange is None:
             raise RuntimeError("Message exchange is not initialized")
 
+        # Preserve existing headers if they exist, otherwise start with an empty dict
+        existing_headers = message.headers if hasattr(message, "headers") else {}
+        new_headers = {**existing_headers, "x-retry-count": retry_count}
+
         new_message = aio_pika.Message(
             body=message.body,
-            headers={**message.header.headers, "x-retry-count": retry_count},
+            headers=new_headers,
             delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
         )
 
@@ -161,7 +186,9 @@ class RabbitMQConsumer:
                 new_message,
                 routing_key=settings.ERROR_QUEUE,
             )
-            logger.warning(f"Message exceeded max retries. Moved to error queue: {content}")
+            logger.warning(
+                f"Message exceeded max retries. Moved to error queue: {content}"
+            )
 
         await message.ack()
 
@@ -171,10 +198,9 @@ class RabbitMQConsumer:
 
         await self.message_exchange.publish(
             aio_pika.Message(
-                body=message.encode(),
-                delivery_mode=aio_pika.DeliveryMode.PERSISTENT
+                body=message.encode(), delivery_mode=aio_pika.DeliveryMode.PERSISTENT
             ),
-            routing_key=routing_key
+            routing_key=routing_key,
         )
         logger.info(f"Published message to queue: {routing_key}")
 

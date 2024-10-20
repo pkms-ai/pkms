@@ -88,7 +88,7 @@ WORKDIR /app
 COPY . .
 
 EXPOSE 8000
-CMD ["uvicorn", "db_service.main:start", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "content_processing_service.main:start", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 ################################
 # PRODUCTION
@@ -98,5 +98,6 @@ FROM python-base as production
 ENV FASTAPI_ENV=production
 COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 WORKDIR /app
-COPY db_service ./db_service
-CMD ["uvicorn", "db_service.main:start", "--host", "0.0.0.0", "--port", "8000"]
+COPY content_processing_service ./content_processing_service
+CMD ["uvicorn", "content_processing_service.main:start", "--host", "0.0.0.0", "--port", "8000"]
+
