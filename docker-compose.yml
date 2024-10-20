@@ -25,8 +25,8 @@ services:
       - KONG_PROXY_ERROR_LOG=/dev/stderr
       - KONG_ADMIN_ERROR_LOG=/dev/stderr
       - KONG_ADMIN_LISTEN=0.0.0.0:8001, 0.0.0.0:8444 ssl
-    ports:
-      - "8000:8000"
+    # ports:
+    #   - "8000:8000"
     healthcheck:
       test: ["CMD", "kong", "health"]
       interval: 10s

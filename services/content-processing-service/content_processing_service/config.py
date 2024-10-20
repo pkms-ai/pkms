@@ -5,7 +5,7 @@ class Settings(BaseSettings):
     RABBITMQ_URL: str = "amqp://guest:guest@localhost:5672/"
     CORS_ORIGINS: List[str] = ["http://localhost:3000"]
     ENVIRONMENT: str = "development"
-    PORT: int = 8001
+    PORT: int = 8000
 
     @property
     def cors_origins(self) -> List[str]:

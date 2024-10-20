@@ -3,14 +3,14 @@ _transform: true
 
 services:
   - name: content-submission-service
-    url: http://content-submission-service:8001
+    url: http://content-submission-service:8000
     routes:
       - name: content-submission-route
         paths:
           - /api/content-submission
   
   - name: db-service
-    url: http://db-service:8003
+    url: http://db-service:8000
     routes:
       - name: db-route
         paths:
