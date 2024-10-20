@@ -34,7 +34,25 @@ async def get_db_pool(config: DatabaseConfig):
     )
 
 
-async def initialize_database(pool: asyncpg.Pool):
+async def initialize_database(
+    db_config: DatabaseConfig, populate_sample_data: bool = False
+):
+    pool = await get_db_pool(db_config)
+    if not pool:
+        logger.error("Error creating database pool")
+        return
+    try:
+        await create_tables_and_indexes(pool)
+        logger.info("Database tables and indexes created successfully")
+
+        if populate_sample_data:
+            await populate_sample_database(pool)
+            logger.info("Database populated with sample data")
+    finally:
+        await pool.close()
+
+
+async def create_tables_and_indexes(pool: asyncpg.Pool):
     """
     Initialize the database by creating necessary tables and indexes.
     """
@@ -109,3 +127,34 @@ async def populate_sample_database(pool: asyncpg.Pool):
     except Exception as e:
         logger.error(f"Error populating database: {str(e)}")
         raise
+
+
+async def create_database(db_config: DatabaseConfig):
+    system_conn = None
+    try:
+        system_conn = await asyncpg.connect(
+            host=db_config.host,
+            port=db_config.port,
+            user=db_config.user,
+            password=db_config.password,
+            database="postgres",
+        )
+
+        # Check if the database exists
+        exists = await system_conn.fetchval(
+            "SELECT 1 FROM pg_database WHERE datname = $1", db_config.database
+        )
+
+        if not exists:
+            # Create the database if it doesn't exist
+            await system_conn.execute(f'CREATE DATABASE "{db_config.database}"')
+            logger.info(f"Database '{db_config.database}' created successfully")
+        else:
+            logger.info(f"Database '{db_config.database}' already exists")
+
+    except Exception as e:
+        logger.error(f"Error creating database '{db_config.database}': {str(e)}")
+        raise
+    finally:
+        if system_conn:
+            await system_conn.close()
