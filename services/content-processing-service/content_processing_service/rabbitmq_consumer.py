@@ -18,7 +18,7 @@ from aio_pika.abc import (
 )
 import asyncio
 from .config import settings
-from .processors import process_content, ContentProcessingError
+from .processors import process_content, ContentProcessingError, ContentAlreadyExistsError
 
 logger = logging.getLogger(__name__)
 
@@ -55,16 +55,24 @@ class RabbitMQConsumer:
 
     async def setup_queues(self) -> None:
         """
-        Declares the content processing queue and the error queue with their respective exchanges.
+        Declares and sets up all necessary queues for the content processing service.
 
         The setup process includes:
-        1. Declaring a message exchange for handling various message routing.
-        2. Declaring an error queue bound to the message exchange.
-        3. Declaring the main content processing queue.
+        1. Declaring a direct message exchange for handling message routing.
+        2. Declaring and binding the following queues to the message exchange:
+           - Main content processing queue (RABBITMQ_QUEUE_NAME)
+           - Crawl queue (CRAWL_QUEUE)
+           - Transcribe queue (TRANSCRIBE_QUEUE)
+           - Error queue (ERROR_QUEUE)
+        3. Setting up the main content processing queue for consumption.
 
         Message flow:
         - New messages -> Content Processing Queue
-        - Failed messages (after max retries) -> Message Exchange -> Error Queue
+        - Processed messages -> Crawl Queue or Transcribe Queue (based on content type)
+        - Failed messages (after max retries) -> Error Queue
+
+        All queues are declared as durable to ensure message persistence across RabbitMQ restarts.
+        Each queue is bound to the message exchange using its own name as the routing key.
         """
         if self.channel is None:
             raise RuntimeError("Channel is not initialized")
@@ -74,12 +82,22 @@ class RabbitMQConsumer:
             settings.MESSAGE_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True
         )
 
-        # Declare the content processing queue
-        self.content_processing_queue = await self.channel.declare_queue(
+        # Declare all necessary queues
+        queues_to_declare = [
             settings.RABBITMQ_QUEUE_NAME,
-            durable=True
-        )
-        logger.info(f"Declared queue: {settings.RABBITMQ_QUEUE_NAME}")
+            settings.CRAWL_QUEUE,
+            settings.TRANSCRIBE_QUEUE,
+            settings.ERROR_QUEUE
+        ]
+
+        for queue_name in queues_to_declare:
+            queue = await self.channel.declare_queue(queue_name, durable=True)
+            # Bind the queue to the message exchange with the appropriate routing key
+            await queue.bind(self.message_exchange, routing_key=queue_name)
+            logger.info(f"Declared and bound queue: {queue_name}")
+
+        # Set the content processing queue
+        self.content_processing_queue = await self.channel.get_queue(settings.RABBITMQ_QUEUE_NAME)
 
     async def process_message(self, message: AbstractIncomingMessage) -> None:
         try:
@@ -87,10 +105,19 @@ class RabbitMQConsumer:
             content: Dict[str, Any] = json.loads(body)
 
             logger.info(f"Received message: {content}")
-            result = await asyncio.wait_for(
+            queue_name, processed_content = await asyncio.wait_for(
                 process_content(content), timeout=settings.CONTENT_PROCESSING_TIMEOUT
             )
-            logger.info(f"Processed result: {result}")
+            logger.info(f"Processed content. Forwarding to queue: {queue_name}")
+            
+            # Publish the processed content to the appropriate queue
+            await self.publish_message(queue_name, json.dumps(processed_content))
+            
+            await message.ack()
+        except ContentAlreadyExistsError as e:
+            logger.info(f"Content already exists: {str(e)}")
+            # Acknowledge the message without retrying
+            # TODO; consider move to error queue or a better way tho notify
             await message.ack()
         except (asyncio.TimeoutError, ContentProcessingError, Exception) as e:
             logger.error(f"Error processing message: {str(e)}")
@@ -137,6 +164,19 @@ class RabbitMQConsumer:
             logger.warning(f"Message exceeded max retries. Moved to error queue: {content}")
 
         await message.ack()
+
+    async def publish_message(self, routing_key: str, message: str) -> None:
+        if self.message_exchange is None:
+            raise RuntimeError("Message exchange is not initialized")
+
+        await self.message_exchange.publish(
+            aio_pika.Message(
+                body=message.encode(),
+                delivery_mode=aio_pika.DeliveryMode.PERSISTENT
+            ),
+            routing_key=routing_key
+        )
+        logger.info(f"Published message to queue: {routing_key}")
 
     async def start_consuming(self) -> None:
         """

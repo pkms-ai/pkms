@@ -15,6 +15,11 @@ class Settings(BaseSettings):
     MESSAGE_EXCHANGE: str = "message_exchange"
     ERROR_QUEUE: str = "error_queue"
     MAX_RETRIES: int = 3
+    CRAWL_QUEUE: str = "crawl_queue"
+    TRANSCRIBE_QUEUE: str = "transcribe_queue"
+
+    # DB Service URL
+    DB_SERVICE_URL: str = "http://localhost/api/db"  # Adjust the URL and port as needed
 
     @property
     def cors_origins(self) -> List[str]:
