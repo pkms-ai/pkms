@@ -104,6 +104,20 @@ services:
       timeout: 10s
       retries: 5
 
+  summarizer-service:
+    build: ./services/summarizer-service
+    env_file:
+      - .env
+    depends_on:
+      - message-queue
+    networks:
+      - pkms-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   db-service:
     build: ./services/db-service
     env_file:

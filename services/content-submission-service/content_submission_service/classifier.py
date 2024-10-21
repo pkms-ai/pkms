@@ -1,4 +1,5 @@
 import logging
+import uuid
 
 from openai import OpenAI
 
@@ -30,8 +31,9 @@ def classify_content(input_text: str) -> Content:
 
         classified_content = completion.choices[0].message.parsed
         if classified_content is None:
-            return Content(content_type=ContentType.UNKNOWN)
+            content_id = str(uuid.uuid4())
+            return Content(content_id=content_id, content_type=ContentType.UNKNOWN)
         return classified_content
     except Exception as e:
         logging.error(f"Error classifying content: {e}")
-        return Content(content_type=ContentType.UNKNOWN)
+        return Content(content_id="", content_type=ContentType.UNKNOWN)

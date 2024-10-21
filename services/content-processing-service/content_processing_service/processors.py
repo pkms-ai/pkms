@@ -1,7 +1,8 @@
 import logging
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 import httpx
+from aio_pika.abc import AbstractIncomingMessage
 from pydantic import ValidationError
 
 from .config import settings
@@ -29,7 +30,7 @@ async def check_url_exists(url: str) -> bool:
     async with httpx.AsyncClient() as client:
         try:
             response = await client.get(
-                f"{settings.db_service_url()}/check_url", params={"url": url}
+                f"{settings.DB_SERVICE_URL}/check_url", params={"url": url}
             )
             response.raise_for_status()
             return response.json().get("exists", False)
@@ -100,3 +101,21 @@ async def process_content(content: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]
     except Exception as e:
         logger.exception(f"Error processing content: {e}")
         raise ContentProcessingError(f"Error processing content: {str(e)}")
+
+        # Custom Exception Handler Example
+
+
+async def custom_process_error_handler(
+    exception: Exception,
+    content: Optional[Dict[str, Any]],
+    message: AbstractIncomingMessage,
+) -> None:
+    if isinstance(exception, ContentAlreadyExistsError):
+        logger.info(f"Content already exists: {str(exception)}")
+        # if content:
+        # Move to a specific queue for already existing content
+        # await consumer.publish_message(settings.EXISTS_QUEUE, json.dumps(content))
+        await message.ack()
+    else:
+        # Re-raise the exception to let the default handler manage it
+        raise exception

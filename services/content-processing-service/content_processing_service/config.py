@@ -9,13 +9,9 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     PORT: int = 8000
 
-    # Configuration options
-    CONTENT_PROCESSING_TIMEOUT: int = 300  # 5 minutes in seconds
-    MAX_RETRIES: int = 3
-
     # Queue settings
     INPUT_QUEUE: str = "classified_queue"
-    MAIN_EXCHANGE: str = "content_processing_exchange"
+    EXCHANGE_QUEUE: str = "content_processing_exchange"
     ERROR_QUEUE: str = "error_queue"
     CRAWL_QUEUE: str = "crawl_queue"
     TRANSCRIBE_QUEUE: str = "transcribe_queue"
@@ -30,8 +26,13 @@ class Settings(BaseSettings):
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "allow"}
 
-    def db_service_url(self) -> str:
+    @property
+    def DB_SERVICE_URL(self) -> str:
         return f"http://{self.API_GATEWAY_HOST}:{self.API_GATEWAY_PORT}/api/db"
+
+    @property
+    def OUTPUT_QUEUES(self) -> List[str]:
+        return [self.CRAWL_QUEUE, self.TRANSCRIBE_QUEUE]
 
 
 settings = Settings()

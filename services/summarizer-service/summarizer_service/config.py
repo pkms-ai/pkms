@@ -10,13 +10,9 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     PORT: int = 8000
 
-    # Configuration options
-    CONTENT_PROCESSING_TIMEOUT: int = 300  # 5 minutes in seconds
-    MAX_RETRIES: int = 3
-
     # Queue settings
     INPUT_QUEUE: str = "summary_queue"
-    MAIN_EXCHANGE: str = "summary_exchange"
+    EXCHANGE_QUEUE: str = "summary_exchange"
     ERROR_QUEUE: str = "error_queue"
     EMBEDDING_QUEUE: str = "embedding_queue"
 
@@ -30,8 +26,13 @@ class Settings(BaseSettings):
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "allow"}
 
-    def db_service_url(self) -> str:
+    @property
+    def DB_SERVICE_URL(self) -> str:
         return f"http://{self.API_GATEWAY_HOST}:{self.API_GATEWAY_PORT}/api/db"
+
+    @property
+    def OUTPUT_QUEUES(self) -> List[str]:
+        return [self.EMBEDDING_QUEUE]
 
 
 settings = Settings()

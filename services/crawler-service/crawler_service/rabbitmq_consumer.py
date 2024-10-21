@@ -8,7 +8,7 @@
 import asyncio
 import json
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Awaitable, Callable, Coroutine, Dict, List, Optional, Tuple
 
 import aio_pika
 from aio_pika.abc import (
@@ -19,11 +19,6 @@ from aio_pika.abc import (
     AbstractQueue,
 )
 
-from .config import settings
-from .processors import (
-    process_content,
-)
-
 logger = logging.getLogger(__name__)
 
 
@@ -32,15 +27,36 @@ class RabbitMQConsumer:
     The main class that handles the RabbitMQ connection, channel setup, and message consumption.
     """
 
-    def __init__(self) -> None:
-        """
-        Initializes the consumer with empty connection, channel, and queue attributes.
-        """
+    def __init__(
+        self,
+        rabbitmq_url: str,
+        input_queue: str,
+        exchange_queue: str,
+        error_queue: str,
+        output_queues: List[str],
+        process_func: Callable[[Dict[str, Any]], Awaitable[Tuple[str, Any]]],
+        process_error_handler: Optional[
+            Callable[
+                [Exception, Optional[Dict[str, Any]], AbstractIncomingMessage],
+                Coroutine[Any, Any, None],
+            ]
+        ] = None,
+        processing_timeout: int = 300,
+        max_retries: int = 3,
+    ) -> None:
+        self.rabbitmq_url = rabbitmq_url
+        self.input_queue_name = input_queue
+        self.exchange_queue_name = exchange_queue
+        self.error_queue_name = error_queue
+        self.output_queues = output_queues
+        self.process_func = process_func
+        self.process_error_handler = process_error_handler
+        self.processing_timeout = processing_timeout
+        self.max_retries = max_retries
         self.connection: Optional[AbstractConnection] = None
         self.channel: Optional[AbstractChannel] = None
         self.input_queue: Optional[AbstractQueue] = None
         self.main_exchange: Optional[AbstractExchange] = None
-        self.summary_queue: Optional[AbstractQueue] = None
         self.error_queue: Optional[AbstractQueue] = None
 
     async def connect(self) -> None:
@@ -50,7 +66,7 @@ class RabbitMQConsumer:
         """
         if not self.connection or self.connection.is_closed:
             self.connection = await aio_pika.connect_robust(
-                settings.RABBITMQ_URL,
+                self.rabbitmq_url,
                 heartbeat=60,  # Set heartbeat interval to 60 seconds
             )
             self.channel = await self.connection.channel()
@@ -60,40 +76,19 @@ class RabbitMQConsumer:
             logger.info("Connected to RabbitMQ")
 
     async def setup_queues(self) -> None:
-        """
-        Declares and sets up all necessary queues for the content processing service.
-
-        The setup process includes:
-        1. Declaring a direct message exchange for handling message routing.
-        2. Declaring and binding the following queues to the message exchange:
-           - Main content processing queue (input_queue)
-           - Crawl queue (input_queue)
-           - Transcribe queue (TRANSCRIBE_QUEUE)
-           - Error queue (ERROR_QUEUE)
-        3. Setting up the main content processing queue for consumption.
-
-        Message flow:
-        - New messages -> Content Processing Queue
-        - Processed messages -> Crawl Queue or Transcribe Queue (based on content type)
-        - Failed messages (after max retries) -> Error Queue
-
-        All queues are declared as durable to ensure message persistence across RabbitMQ restarts.
-        Each queue is bound to the message exchange using its own name as the routing key.
-        """
         if self.channel is None:
             raise RuntimeError("Channel is not initialized")
 
         # Declare the message exchange
         self.main_exchange = await self.channel.declare_exchange(
-            settings.MAIN_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True
+            self.exchange_queue_name, aio_pika.ExchangeType.DIRECT, durable=True
         )
 
         # Declare all necessary queues
         queues_to_declare = [
-            settings.INPUT_QUEUE,
-            settings.SUMMARY_QUEUE,
-            settings.ERROR_QUEUE,
-        ]
+            self.input_queue_name,
+            self.error_queue_name,
+        ] + self.output_queues
 
         for queue_name in queues_to_declare:
             queue = await self.channel.declare_queue(queue_name, durable=True)
@@ -102,26 +97,37 @@ class RabbitMQConsumer:
             logger.info(f"Declared and bound queue: {queue_name}")
 
         # Set the content processing queue
-        self.input_queue = await self.channel.get_queue(settings.INPUT_QUEUE)
+        self.input_queue = await self.channel.get_queue(self.input_queue_name)
 
     async def process_message(self, message: AbstractIncomingMessage) -> None:
+        content: Dict[str, Any] = dict()
         try:
             body = message.body.decode()
             content: Dict[str, Any] = json.loads(body)
 
-            logger.info(f"Received message: {content}")
+            logger.info(f"Received message: {content.get('url')}")
             queue_name, processed_content = await asyncio.wait_for(
-                process_content(content), timeout=settings.CONTENT_PROCESSING_TIMEOUT
+                self.process_func(content), timeout=self.processing_timeout
             )
             logger.info(f"Processed content. Forwarding to queue: {queue_name}")
 
-            # Publish the processed content to the appropriate queue
+            # Publish the processed content to the appropriate next queue
             await self.publish_message(queue_name, json.dumps(processed_content))
 
             await message.ack()
         except (asyncio.TimeoutError, Exception) as e:
-            logger.error(f"Error processing message: {str(e)}")
-            await self.handle_failed_message(message)
+            # Try the custom handler first if provided
+            if self.process_error_handler:
+                try:
+                    await self.process_error_handler(e, content, message)
+                except Exception as custom_handler_error:
+                    # If the custom handler fails, fall back to the default
+                    logger.error(f"Unhandled error: {str(custom_handler_error)}")
+                    await self.handle_failed_message(message)
+            else:
+                # Default fallback handling for any unhandled exceptions
+                logger.error(f"Unhandled error: {str(e)}")
+                await self.handle_failed_message(message)
 
     async def handle_failed_message(self, message: AbstractIncomingMessage) -> None:
         """
@@ -168,22 +174,24 @@ class RabbitMQConsumer:
             delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
         )
 
-        if retry_count < settings.MAX_RETRIES:
+        if retry_count < self.max_retries:
             # Requeue the message
             await self.main_exchange.publish(
                 new_message,
-                routing_key=settings.INPUT_QUEUE,
+                routing_key=self.input_queue_name,
             )
-            logger.info(f"Requeued message: {content}, with retry count: {retry_count}")
+            logger.info(
+                f"Requeued message: {content.get('url')}, with retry count: {retry_count}"
+            )
         else:
             # Move to error queue
             new_message.headers["x-error-reason"] = "exceeded_max_retries"
             await self.main_exchange.publish(
                 new_message,
-                routing_key=settings.ERROR_QUEUE,
+                routing_key=self.error_queue_name,
             )
             logger.warning(
-                f"Message exceeded max retries. Moved to error queue: {content}"
+                f"Message exceeded max retries. Moved to error queue: {content.get('url')}"
             )
 
         await message.ack()
@@ -205,9 +213,9 @@ class RabbitMQConsumer:
         Starts consuming messages from the content processing queue specified in the configuration.
         """
         if self.input_queue is None:
-            raise RuntimeError(f"{settings.INPUT_QUEUE} is not initialized")
+            raise RuntimeError(f"{self.input_queue_name} is not initialized")
         await self.input_queue.consume(self.process_message)
-        logger.info(f"Started consuming from {settings.INPUT_QUEUE}")
+        logger.info(f"Started consuming from {self.input_queue_name}")
 
     async def run(self) -> None:
         """
@@ -235,10 +243,9 @@ class RabbitMQConsumer:
                 if self.connection and not self.connection.is_closed:
                     await self.connection.close()
 
-
-async def start_rabbitmq_consumer() -> None:
-    """
-    Creates a RabbitMQConsumer instance and starts running it.
-    """
-    consumer = RabbitMQConsumer()
-    await consumer.run()
+    async def stop(self):
+        logger.info("Shutting down consumer")
+        if self.channel and not self.channel.is_closed:
+            await self.channel.close()
+        if self.connection and not self.connection.is_closed:
+            await self.connection.close()

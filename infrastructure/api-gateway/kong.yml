@@ -23,6 +23,13 @@ services:
         paths:
           - /api/content-processing
 
+  - name: summarizer-service
+    url: http://summarizer-service:8000
+    routes:
+      - name: summarizer-route
+        paths:
+          - /api/summarizer
+
   - name: crawler-service
     url: http://crawler-service:8000
     routes:

@@ -29,8 +29,6 @@ async def submit_content(submission: ContentSubmission):
                 status_code=400, content={"detail": "Failed to classify the content"}
             )
 
-        content_id = str(uuid.uuid4())
-        classified_content.content_id = content_id
         logger.info(f"Classified content: {classified_content}")
 
         queue_name = "classified_queue"
