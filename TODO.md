@@ -1,0 +1,1 @@
+- Need a way to initialize the db after the postgress spin up

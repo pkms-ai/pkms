@@ -1,3 +1,4 @@
+import os
 import asyncio
 import logging
 from contextlib import asynccontextmanager
@@ -15,6 +16,9 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    print(f"Using RABBITMQ_URL: {settings.RABBITMQ_URL}")
+    print(f"RABBITMQ_URL from env: {os.getenv('RABBITMQ_URL')}")
+    print(f"Input queue: {settings.INPUT_QUEUE}")
     # Startup
     consumer_task = asyncio.create_task(start_rabbitmq_consumer())
     logger.info("RabbitMQ consumer started")

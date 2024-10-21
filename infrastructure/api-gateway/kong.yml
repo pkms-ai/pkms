@@ -15,7 +15,6 @@ services:
       - name: content-submission-route
         paths:
           - /api/content-submission
-  
 
   - name: content-processing-service
     url: http://content-processing-service:8000
@@ -23,6 +22,13 @@ services:
       - name: content-processing-route
         paths:
           - /api/content-processing
+
+  - name: crawler-service
+    url: http://crawler-service:8000
+    routes:
+      - name: crawler-route
+        paths:
+          - /api/crawler
 
   # - name: auth-service
   #   url: http://auth-service:8080

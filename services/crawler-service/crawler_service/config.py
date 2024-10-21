@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     PORT: int = 8000
 
     # Configuration options
-   
+
     CONTENT_PROCESSING_TIMEOUT: int = 300  # 5 minutes in seconds
     MAX_RETRIES: int = 3
 
@@ -28,10 +28,11 @@ class Settings(BaseSettings):
     def cors_origins(self) -> List[str]:
         return self.CORS_ORIGINS or ["http://localhost:3000"]
 
-    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "allow"}
-
+    @property
     def db_service_url(self) -> str:
         return f"http://{self.API_GATEWAY_HOST}:{self.API_GATEWAY_PORT}/api/db"
+
+    model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "allow"}
 
 
 settings = Settings()
