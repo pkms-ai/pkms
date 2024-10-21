@@ -60,7 +60,7 @@ def start():
     try:
         if env == "development":
             uvicorn.run(
-                "content_processing_service.main:app", host=host, port=port, reload=True
+                "summarizer_service.main:app", host=host, port=port, reload=True
             )
         else:
             uvicorn.run(app, host=host, port=port)

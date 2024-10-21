@@ -1,102 +1,77 @@
 import logging
 from typing import Any, Dict, Tuple
 
-import httpx
+from openai import OpenAI
 from pydantic import ValidationError
 
 from .config import settings
-from .models import ClassifiedContent, ContentType
+from .models import Content
 
 logger = logging.getLogger(__name__)
 
 
 class ContentProcessingError(Exception):
-    """Custom exception for content processing errors."""
-
     pass
 
 
-class ContentAlreadyExistsError(Exception):
-    """Custom exception for content that already exists in the database."""
+async def summary_content(content: Content) -> str:
+    logger.info(f"Summarizing content: {content.url}")
+    try:
+        client = OpenAI()
 
-    pass
+        system_prompt = """
+Summarize the content of a web page.\n\n# Steps\n\n1. Identify the main topic of the web page content.\n2. Extract key points and supporting details from the text.\n3. Determine the purpose and any conclusions or calls to action presented on the page.\n4. Compile the identified information into a concise summary, ensuring all essential points are covered.\n\n# Output Format\n\nThe summary should be a short paragraph that captures the key information from the web page, approximately 3-5 sentences in length. \n\n# Notes\n\n- Ensure the summary is clear and informative without extraneous details.\n- Maintain the original intentions and significant points of the content.\n- Focus on key facts and ideas rather than specific figures or data unless crucial to the topic.
+            """
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": system_prompt,
+                        }
+                    ],
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": content.raw_content,
+                        }
+                    ],
+                },
+            ],
+            temperature=1,
+            max_tokens=1048,
+            top_p=1,
+            frequency_penalty=0,
+            presence_penalty=0,
+            response_format={"type": "text"},
+        )
 
-
-async def check_url_exists(url: str) -> bool:
-    """
-    Check if the URL exists by calling the db-service API.
-    """
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.get(
-                f"{settings.db_service_url()}/check_url", params={"url": url}
-            )
-            response.raise_for_status()
-            return response.json().get("exists", False)
-        except httpx.HTTPError as e:
-            logger.error(f"Error checking URL existence: {e}")
-            raise ContentProcessingError(f"Error checking URL existence: {str(e)}")
-
-
-async def process_web_article(content: ClassifiedContent) -> Tuple[str, Dict[str, Any]]:
-    return settings.CRAWL_QUEUE, content.model_dump()
-
-
-async def process_publication(content: ClassifiedContent) -> Tuple[str, Dict[str, Any]]:
-    return settings.CRAWL_QUEUE, content.model_dump()
-
-
-async def process_youtube_video(
-    content: ClassifiedContent,
-) -> Tuple[str, Dict[str, Any]]:
-    return settings.TRANSCRIBE_QUEUE, content.model_dump()
-
-
-async def process_bookmark(content: ClassifiedContent) -> Tuple[str, Dict[str, Any]]:
-    return settings.CRAWL_QUEUE, content.model_dump()
-
-
-content_processors = {
-    ContentType.WEB_ARTICLE: process_web_article,
-    ContentType.PUBLICATION: process_publication,
-    ContentType.YOUTUBE_VIDEO: process_youtube_video,
-    ContentType.BOOKMARK: process_bookmark,
-}
+        logger.info(f"Content summarized: {response.choices[0].message}")
+        return response.choices[0].message.content
+    except Exception as e:
+        logger.exception(f"Error summarizing content: {e}")
+        raise ContentProcessingError(f"Error summarizing content: {str(e)}")
 
 
 async def process_content(content: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
-    logger.info(f"Starting content processing: {content}")
+    url = content.get("url")
+    logger.info(f"Starting content processing: {url}")
     try:
-        classified_content = ClassifiedContent.model_validate(content)
-        logger.info(f"Processing content: {classified_content}")
-        if not classified_content.url:
-            raise ContentProcessingError("No content or URL provided")
+        validated_content = Content.model_validate(content)
+        validated_content.summary = await summary_content(validated_content)
 
-        # Check if the URL already exists in the database
-        if await check_url_exists(classified_content.url):
-            raise ContentAlreadyExistsError(
-                f"Content with URL {classified_content.url} already exists in the database"
-            )
+        return settings.EMBEDDING_QUEUE, validated_content.model_dump()
 
-        logger.debug(f"Content validated as {classified_content.content_type}")
-
-        processor = content_processors.get(classified_content.content_type)
-        if processor is None:
-            raise ContentProcessingError(
-                f"Unknown content type: {classified_content.content_type}"
-            )
-
-        logger.debug(f"Processing content with {processor.__name__}")
-        queue_name, processed_content = await processor(classified_content)
-        logger.info(f"Content processing completed. Queued for: {queue_name}")
-        return queue_name, processed_content
     except ValidationError as e:
         logger.error(f"Content validation failed: {e}")
         raise ContentProcessingError(f"Content validation failed: {str(e)}")
-    except ContentAlreadyExistsError:
-        raise
-    except ContentProcessingError:
-        raise
+
     except Exception as e:
         logger.exception(f"Error processing content: {e}")
         raise ContentProcessingError(f"Error processing content: {str(e)}")
