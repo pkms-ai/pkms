@@ -15,6 +15,10 @@ services:
     image: kong:latest
     depends_on:
       - content-submission-service
+      - content-processing-service
+      - crawler-service
+      - summarizer-service
+      - embedding-service
     networks:
       - pkms-network
     environment:
@@ -118,6 +122,21 @@ services:
       timeout: 10s
       retries: 5
 
+  embedding-service:
+    build: ./services/embedding-service
+    env_file:
+      - .env
+    depends_on:
+      - message-queue
+      - pgvector
+    networks:
+      - pkms-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
   db-service:
     build: ./services/db-service
     env_file:
@@ -185,6 +204,8 @@ services:
 
   message-queue:
     image: rabbitmq:3-management
+    env_file:
+      - .env
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -196,6 +217,8 @@ services:
   # Database services
   postgres:
     image: postgres:13
+    env_file:
+      - .env
     environment:
       - POSTGRES_USER=${POSTGRES_USER}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -207,6 +230,29 @@ services:
     networks:
       - pkms-network
 
+  pgvector:
+    image: pgvector/pgvector:pg16
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_USER=${VECTOR_DB_USER}
+      - POSTGRES_PASSWORD=${VECTOR_DB_PASSWORD}
+      - POSTGRES_DB=${VECTOR_DB_NAME}
+    ports:
+      - "${VECTOR_DB_PORT}:5432"
+    restart: unless-stopped
+    volumes:
+      - vector_db_data:/var/lib/postgresql/data
+    networks:
+      - pkms-network
+
+  adminer:
+    image: adminer
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    networks:
+      - pkms-network
   # qdrant:
   #   image: qdrant/qdrant:v1.1.1
   #   volumes:
@@ -242,5 +288,6 @@ networks:
 volumes:
   rabbitmq_data:
   postgres_data:
-  qdrant_data:
-  neo4j_data:
+  vector_db_data:
+  # qdrant_data:
+  # neo4j_data:

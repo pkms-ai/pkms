@@ -109,10 +109,18 @@ class RabbitMQConsumer:
             queue_name, processed_content = await asyncio.wait_for(
                 self.process_func(content), timeout=self.processing_timeout
             )
-            logger.info(f"Processed content. Forwarding to queue: {queue_name}")
 
-            # Publish the processed content to the appropriate next queue
-            await self.publish_message(queue_name, json.dumps(processed_content))
+            if queue_name == "":
+                # in case queue name is not in output queues, we assume the worklow is completed
+                logger.info(
+                    "Processed content. Workflow completed. No further processing required."
+                )
+            else:
+                logger.info(f"Processed content. Forwarding to queue: {queue_name}")
+                if queue_name not in self.output_queues:
+                    raise ValueError(f"Queue {queue_name} is not in output queues")
+                # Publish the processed content to the appropriate next queue
+                await self.publish_message(queue_name, json.dumps(processed_content))
 
             await message.ack()
         except (asyncio.TimeoutError, Exception) as e:

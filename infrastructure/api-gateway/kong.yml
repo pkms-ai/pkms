@@ -23,6 +23,13 @@ services:
         paths:
           - /api/content-processing
 
+  - name: crawler-service
+    url: http://crawler-service:8000
+    routes:
+      - name: crawler-route
+        paths:
+          - /api/crawler
+
   - name: summarizer-service
     url: http://summarizer-service:8000
     routes:
@@ -30,12 +37,12 @@ services:
         paths:
           - /api/summarizer
 
-  - name: crawler-service
-    url: http://crawler-service:8000
+  - name: embedding-service
+    url: http://embedding-service:8000
     routes:
-      - name: crawler-route
+      - name: embedding-route
         paths:
-          - /api/crawler
+          - /api/embedding
 
   # - name: auth-service
   #   url: http://auth-service:8080

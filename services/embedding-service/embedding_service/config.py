@@ -4,25 +4,26 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    OPENAI_API_KEY: str = "OPENAI_API_KEY"
     RABBITMQ_URL: str = "amqp://guest:guest@localhost:5672/"
     CORS_ORIGINS: List[str] = ["http://localhost:3000"]
     ENVIRONMENT: str = "development"
     PORT: int = 8000
 
-    # Configuration options
-    RABBITMQ_QUEUE_NAME: str = "classified_queue"
-    CONTENT_PROCESSING_TIMEOUT: int = 300  # 5 minutes in seconds
-
     # Queue settings
-    MESSAGE_EXCHANGE: str = "message_exchange"
+    INPUT_QUEUE: str = "embedding_queue"
+    EXCHANGE_QUEUE: str = "embedding_exchange"
     ERROR_QUEUE: str = "error_queue"
-    MAX_RETRIES: int = 3
-    CRAWL_QUEUE: str = "crawl_queue"
-    TRANSCRIBE_QUEUE: str = "transcribe_queue"
 
     # DB Service URL
     API_GATEWAY_HOST: str = "localhost"
     API_GATEWAY_PORT: str = "80"
+
+    VECTOR_DB_HOST: str = "localhost"
+    VECTOR_DB_USER: str = "vector_user"
+    VECTOR_DB_PASSWORD: str = "vector_pass"
+    VECTOR_DB_PORT: int = 6024
+    VECTOR_DB_NAME: str = "pkms_vector"
 
     @property
     def cors_origins(self) -> List[str]:
@@ -30,8 +31,19 @@ class Settings(BaseSettings):
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "allow"}
 
-    def db_service_url(self) -> str:
+    @property
+    def DB_SERVICE_URL(self) -> str:
         return f"http://{self.API_GATEWAY_HOST}:{self.API_GATEWAY_PORT}/api/db"
+
+    @property
+    def VECTOR_DB_URL(self) -> str:
+        if self.VECTOR_DB_HOST != "localhost":
+            return f"postgresql+psycopg://{self.VECTOR_DB_USER}:{self.VECTOR_DB_PASSWORD}@{self.VECTOR_DB_HOST}:5432/{self.VECTOR_DB_NAME}"
+        return f"postgresql+psycopg://{self.VECTOR_DB_USER}:{self.VECTOR_DB_PASSWORD}@{self.VECTOR_DB_HOST}:{self.VECTOR_DB_PORT}/{self.VECTOR_DB_NAME}"
+
+    @property
+    def OUTPUT_QUEUES(self) -> List[str]:
+        return []
 
 
 settings = Settings()
