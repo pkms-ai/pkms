@@ -1,13 +1,13 @@
 import asyncio
 import base64
 import os
-
-import requests
-from bs4 import BeautifulSoup, Tag
+import re
+import google.generativeai as genai
+from google.generativeai.types import GenerationConfigType
 from crawl4ai import AsyncWebCrawler
 
-from crawler_service.processors import extract_metadata
-
+from crawler_service.config import settings
+from crawler_service.crawler import extract_metadata
 
 system_prompt = """ Clean the given context extract from a website by removing irrelevant information while preserving the main text, markdown format, and associated images. Do not translate or modify the content language.
 
@@ -27,6 +27,19 @@ The cleaned content should be presented in its original markdown format, with al
 - Irrelevant information may include advertisements, pop-up notices, unrelated sidebars, or non-contextual links.
 - Ensure that any headings, lists, or other markdown elements remain unaffected and correctly formatted.
 """
+
+
+def unwrap_first_codeblock(response_text: str) -> str:
+    """
+    Cleans and unwraps the first code block by removing the first occurrence of code block delimiters.
+    """
+    # Replace the first code block using `re.subn` which allows limiting replacements
+    cleaned_text, _ = re.subn(r"```.*?```", "", response_text, count=1, flags=re.DOTALL)
+
+    # Strip extra whitespace or newlines
+    cleaned_text = cleaned_text.strip()
+
+    return cleaned_text
 
 
 # def get_redirected_url(url):
@@ -71,11 +84,36 @@ The cleaned content should be presented in its original markdown format, with al
 #
 
 
+def clean_markdown(markdown):
+    genai.configure(api_key=settings.GEMINI_API_KEY)
+
+    # Create the model
+    generation_config = {
+        "temperature": 1,
+        "top_p": 0.95,
+        "top_k": 40,
+        "max_output_tokens": 8010,
+        "response_mime_type": "text/plain",
+    }
+
+    model = genai.GenerativeModel(
+        model_name="gemini-1.5-flash-002",
+        generation_config=generation_config,
+        system_instruction="You are a professional in web scraping and cleaning markdown. You excel at identifying irrelevant elements and extracting the core content cleanly.\n\nClean the provided markdown content from a website by removing irrelevant elements such as navigation and headers while maintaining the main content, language, images, and links. Ensure that the output is in markdown format only.\n\n# Steps\n\n1. **Identify Main Content**: Locate the sections of the markdown that correspond to the primary content based on context and relevance.\n2. **Remove Irrelevant Sections**: Identify and eliminate any markdown portions related to navigation, headers, footers, or any non-essential sections that do not contribute to the main content.\n3. **Preserve Language and Images**: Ensure that the main textual content remains intact, preserving the original language and all image references.\n4. **Perform Quality Check**: Review the cleaned markdown to ensure that only relevant content is maintained, and the markdown format is correctly preserved.\n\n# Output Format\n\n- The output should be pure markdown format.\n- Only relevant main content, language, and images should be included.\n- Ensure there is no extraneous or irrelevant information in the output.\n\n# Notes\n\n- Pay careful attention to sections of the markdown that are structured as navigation, headers, or footers to ensure they are removed.\n- Maintain any links or references integral to the main content.\n- Images should remain in their original markdown format with accurate alt text.\n",
+    )
+
+    chat_session = model.start_chat(history=[])
+
+    response = chat_session.send_message(markdown)
+
+    return response.text
+
+
 async def main():
     async with AsyncWebCrawler(verbose=True) as crawler:
         result = await crawler.arun(
             # url="https://vnexpress.net/chu-tich-nuoc-luong-cuong-khong-mo-lam-den-cap-nay-chuc-kia-4806802.html",
-            url="https://www.cnx-software.com/2024/10/21/seeed-studio-esp32-c6-60ghz-mmwave-human-fall-detection-and-breathing-heartbeat-detection-sensor-kits/",
+            url="https://medium.com/@SergeyNuzhdin/how-to-build-tiny-golang-docker-images-with-gitlab-ci-166e11d5c3f7",
             screenshot=True,
             metadata=True,
             # bypass_cache=True,
@@ -104,9 +142,13 @@ async def main():
                 # escape_snob = False
             },
         )
+
+        # clean
+        cleaned_markdown = clean_markdown(result.markdown)
+        cleaned_markdown = unwrap_first_codeblock(cleaned_markdown)
         # Save markdown to file
         with open(os.path.join("playground", "output.md"), "w") as f:
-            f.write(result.markdown)
+            f.write(cleaned_markdown)
 
         # Save the screenshot to a file
         with open(os.path.join("playground", "screenshot.png"), "wb") as f:

@@ -16,6 +16,7 @@ class Metadata(BaseModel):
     description: Optional[str] = None
     image_url: Optional[str] = None
     canonical_url: Optional[str] = None
+    keywords: Optional[str] = None
 
 
 class Content(BaseModel):
@@ -27,3 +28,4 @@ class Content(BaseModel):
     description: Optional[str] = None
     image_url: Optional[str] = None
     canonical_url: Optional[str] = None
+    keywords: Optional[str] = None

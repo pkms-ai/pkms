@@ -33,4 +33,5 @@ class Content(BaseModel):
     description: Optional[str] = None
     image_url: Optional[str] = None
     canonical_url: Optional[str] = None
+    keywords: Optional[list] = None
     summary: Optional[str] = None
