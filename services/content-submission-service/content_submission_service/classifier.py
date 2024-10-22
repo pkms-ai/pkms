@@ -4,7 +4,7 @@ import uuid
 from openai import OpenAI
 
 from .config import settings
-from .models import Content, ContentType
+from .models import Content, ClassifiedContent, ContentType
 
 
 def classify_content(input_text: str) -> Content:
@@ -26,14 +26,18 @@ def classify_content(input_text: str) -> Content:
                 {"role": "system", "content": prompt},
                 {"role": "user", "content": input_text},
             ],
-            response_format=Content,
+            response_format=ClassifiedContent,
         )
 
         classified_content = completion.choices[0].message.parsed
         if classified_content is None:
-            content_id = str(uuid.uuid4())
-            return Content(content_id=content_id, content_type=ContentType.UNKNOWN)
-        return classified_content
+            return Content(content_type=ContentType.UNKNOWN)
+        content = Content(
+            content_id=str(uuid.uuid4()),
+            content_type=classified_content.content_type,
+            url=classified_content.url,
+        )
+        return content
     except Exception as e:
         logging.error(f"Error classifying content: {e}")
-        return Content(content_id="", content_type=ContentType.UNKNOWN)
+        return Content(content_type=ContentType.UNKNOWN)

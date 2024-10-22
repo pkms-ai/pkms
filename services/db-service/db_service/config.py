@@ -7,9 +7,9 @@ from pydantic_settings import BaseSettings
 class Settings(BaseSettings):
     POSTGRES_HOST: str = "localhost"
     POSTGRES_PORT: int = 5432
-    POSTGRES_USER: str = "postgres"
-    POSTGRES_PASSWORD: str
-    POSTGRES_DB: str = "content_db"
+    POSTGRES_USER: str = "pkms_user"
+    POSTGRES_PASSWORD: str = "pkms_pass"
+    POSTGRES_DB: str = "pkms_db"
     CORS_ORIGINS: List[str] = ["http://localhost:3000"]
     ENVIRONMENT: str = "development"
     RETRY_ATTEMPTS: int = 3

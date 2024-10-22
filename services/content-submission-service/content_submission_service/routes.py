@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import uuid
 
 from fastapi import APIRouter
 from fastapi.responses import JSONResponse

@@ -1,5 +1,6 @@
-from enum import Enum
 from typing import Optional
+from enum import Enum
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -12,8 +13,18 @@ class ContentType(str, Enum):
     UNKNOWN = "unknown"
 
 
+# Pydantic model for updating content
+class ContentUpdateModel(BaseModel):
+    title: Optional[str] = None
+    content_type: Optional[ContentType] = None
+    description: Optional[str] = None
+    summary: Optional[str] = None
+    image_url: Optional[str] = None
+    metadata: Optional[dict] = None
+
+
 # Define the Pydantic model
-class InsertContent(BaseModel):
+class ContentModel(BaseModel):
     url: str
     content_type: ContentType
     title: Optional[str] = None
@@ -21,16 +32,4 @@ class InsertContent(BaseModel):
     image_url: Optional[str] = None
     summary: Optional[str] = None
     metadata: Optional[dict] = None
-    content_id: Optional[str] = None
-
-
-class Content(BaseModel):
-    url: str
-    content_id: str
-    content_type: ContentType
-    raw_content: Optional[str] = None
-    title: Optional[str] = None
-    description: Optional[str] = None
-    image_url: Optional[str] = None
-    canonical_url: Optional[str] = None
-    summary: Optional[str] = None
+    content_id: Optional[UUID] = None

@@ -74,12 +74,14 @@ async def create_tables_and_indexes(pool: asyncpg.Pool):
             CREATE TABLE IF NOT EXISTS content (
                 id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
                 url VARCHAR(2048) UNIQUE NOT NULL,
-                title TEXT NOT NULL,
                 content_type content_type NOT NULL,
+                title TEXT,
+                image_url VARCHAR(2048),
+                description TEXT,
                 summary TEXT,
+                metadata JSONB,
                 created_at timestamptz DEFAULT CURRENT_TIMESTAMP,
-                updated_at timestamptz DEFAULT CURRENT_TIMESTAMP,
-                metadata JSONB
+                updated_at timestamptz DEFAULT CURRENT_TIMESTAMP
             );
             
             CREATE INDEX IF NOT EXISTS idx_content_url ON content (url);

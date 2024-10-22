@@ -1,10 +1,13 @@
+import json
 import logging
 from enum import Enum
 from typing import Optional
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 from uuid import UUID, uuid4
-from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
 
 import asyncpg
+
+from .model import ContentModel, ContentUpdateModel
 
 logger = logging.getLogger(__name__)
 
@@ -23,18 +26,26 @@ def normalize_url(url: str) -> str:
     """
     parsed = urlparse(url)
     # Remove fragment
-    parsed = parsed._replace(fragment='')
-    
+    parsed = parsed._replace(fragment="")
+
     # Parse and filter query parameters
     query_params = parse_qs(parsed.query)
     # Add logic here to remove unnecessary parameters
     # For example, remove 'utm_source', 'utm_medium', etc.
-    unnecessary_params = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content']
-    filtered_params = {k: v for k, v in query_params.items() if k not in unnecessary_params}
-    
+    unnecessary_params = [
+        "utm_source",
+        "utm_medium",
+        "utm_campaign",
+        "utm_term",
+        "utm_content",
+    ]
+    filtered_params = {
+        k: v for k, v in query_params.items() if k not in unnecessary_params
+    }
+
     # Reconstruct the query string
     new_query = urlencode(filtered_params, doseq=True)
-    
+
     # Reconstruct the URL
     normalized = parsed._replace(query=new_query)
     return urlunparse(normalized)
@@ -81,23 +92,18 @@ async def get_content_by_url(pool: asyncpg.Pool, url: str):
 
 async def insert_content(
     pool: asyncpg.Pool,
-    url: str,
-    title: str,
-    content_type: ContentType,
-    summary: Optional[str] = None,
-    content_id: Optional[UUID] = None,
+    content: ContentModel,
 ) -> dict:
     """
     Insert new content into the database and return the full record.
     """
     # Input validation
-    if not url or not urlparse(url).scheme:
+    if not content.url or not urlparse(content.url).scheme:
         raise ValueError("Invalid URL")
-    if not title:
-        raise ValueError("Title cannot be empty")
 
     # Normalize the URL
-    normalized_url = normalize_url(url)
+    normalized_url = normalize_url(content.url)
+    logger.info(f"Normalized URL: {normalized_url}")
 
     # Check if URL already exists
     exists = await check_url_exists(pool, normalized_url)
@@ -105,35 +111,44 @@ async def insert_content(
         raise ValueError(f"Content with URL {normalized_url} already exists")
 
     async with pool.acquire() as conn:
-        if content_id is None:
-            content_id = uuid4()
+        async with conn.transaction():  # Use a transaction to ensure atomicity
+            if content.content_id is None:
+                content.content_id = uuid4()
 
-        query = """
-        INSERT INTO content (id, url, title, content_type, summary)
-        VALUES ($1, $2, $3, $4::content_type, $5)
-        RETURNING *
-        """
+            query = """
+            INSERT INTO content (id, url, title, content_type, description, summary, image_url, metadata)
+            VALUES ($1, $2, $3, $4::content_type, $5, $6, $7, $8)
+            RETURNING *
+            """
 
-        try:
-            record = await conn.fetchrow(
-                query, content_id, normalized_url, title, content_type.value, summary
-            )
-            logger.info(f"Inserted new content with ID {record['id']}")
-            return dict(record)
-        except asyncpg.UniqueViolationError:
-            logger.error(f"Attempted to insert duplicate content with URL {normalized_url}")
-            raise ValueError(f"Content with URL {normalized_url} already exists")
-        except Exception as e:
-            logger.error(f"Error inserting content: {str(e)}")
-            raise
+            try:
+                record = await conn.fetchrow(
+                    query,
+                    content.content_id,
+                    normalized_url,
+                    content.title,
+                    content.content_type,
+                    content.description,
+                    content.summary,
+                    content.image_url,
+                    json.dumps(content.metadata) if content.metadata else None,
+                )
+                logger.info(f"Inserted new content with ID {record['id']}")
+                return dict(record)
+            except asyncpg.UniqueViolationError:
+                logger.error(
+                    f"Attempted to insert duplicate content with URL {normalized_url}"
+                )
+                raise ValueError(f"Content with URL {normalized_url} already exists")
+            except Exception as e:
+                logger.error(f"Error inserting content: {str(e)}")
+                raise
 
 
 async def update_content(
     pool: asyncpg.Pool,
     content_id: UUID,
-    title: Optional[str] = None,
-    content_type: Optional[ContentType] = None,
-    summary: Optional[str] = None,
+    content_update: ContentUpdateModel,
 ) -> Optional[dict]:
     """
     Update existing content in the database and return the full updated record.
@@ -143,17 +158,29 @@ async def update_content(
         update_values = []
         param_count = 1
 
-        if title is not None:
+        if content_update.title is not None:
             update_fields.append(f"title = ${param_count}")
-            update_values.append(title)
+            update_values.append(content_update.title)
             param_count += 1
-        if content_type is not None:
+        if content_update.content_type is not None:
             update_fields.append(f"content_type = ${param_count}::content_type")
-            update_values.append(content_type.value)
+            update_values.append(content_update.content_type.value)
             param_count += 1
-        if summary is not None:
+        if content_update.description is not None:
+            update_fields.append(f"description = ${param_count}")
+            update_values.append(content_update.description)
+            param_count += 1
+        if content_update.summary is not None:
             update_fields.append(f"summary = ${param_count}")
-            update_values.append(summary)
+            update_values.append(content_update.summary)
+            param_count += 1
+        if content_update.image_url is not None:
+            update_fields.append(f"image_url = ${param_count}")
+            update_values.append(content_update.image_url)
+            param_count += 1
+        if content_update.metadata is not None:
+            update_fields.append(f"metadata = ${param_count}")
+            update_values.append(json.dumps(content_update.metadata))
             param_count += 1
 
         if not update_fields:
