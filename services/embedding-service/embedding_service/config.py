@@ -9,6 +9,7 @@ class Settings(BaseSettings):
     CORS_ORIGINS: List[str] = ["http://localhost:3000"]
     ENVIRONMENT: str = "development"
     PORT: int = 8000
+    VECTOR_COLLECTION: str = "link_collection"
 
     # Queue settings
     INPUT_QUEUE: str = "embedding_queue"

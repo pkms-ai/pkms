@@ -41,7 +41,7 @@ async def embedding_content(content: Content) -> None:
         # See docker command above to launch a postgres instance with pgvector enabled.
         connection = settings.VECTOR_DB_URL
         logger.info(f"Connecting to postgres: {connection}")
-        collection_name = "my_collection"
+        collection_name = settings.VECTOR_COLLECTION
 
         vector_store = PGVector(
             embeddings=embeddings,

@@ -194,6 +194,19 @@ services:
     networks:
       - pkms-network
 
+  flyway:
+    image: flyway/flyway:latest
+    container_name: flyway_migration
+    env_file:
+      - .env
+    command: -url=jdbc:postgresql://postgres:5432/${POSTGRES_DB} -schemas=public -user=${POSTGRES_USER} -password=${POSTGRES_PASSWORD} -locations=filesystem:/flyway/sql -connectRetries=10 migrate
+    volumes:
+      - ./infrastructure/databases/postgres/migrations:/flyway/sql # where migration files are stored
+    depends_on:
+      - postgres
+    networks:
+      - pkms-network
+
   pgvector:
     image: pgvector/pgvector:pg16
     env_file:
