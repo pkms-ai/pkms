@@ -106,16 +106,15 @@ COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 
 # quicker install as runtime deps are already installed
 RUN --mount=type=cache,target=/root/.cache \
-    poetry install --with=dev
+    poetry install --with=dev --no-root
 
 # will become mountpoint of our code
 WORKDIR /app
 RUN playwright install
 COPY . .
 
-
 EXPOSE 8000
-CMD ["uvicorn", "crawler_service.main:start", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "crawler_service.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 ################################
 # PRODUCTION
@@ -129,5 +128,5 @@ WORKDIR /app
 RUN playwright install
 COPY crawler_service ./crawler_service
 
-CMD ["uvicorn", "crawler_service.main:start", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "crawler_service.main:app", "--host", "0.0.0.0", "--port", "8000"]
 

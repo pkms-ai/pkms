@@ -81,14 +81,14 @@ COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 
 # quicker install as runtime deps are already installed
 RUN --mount=type=cache,target=/root/.cache \
-    poetry install --with=dev
+    poetry install --with=dev --no-root
 
 # will become mountpoint of our code
 WORKDIR /app
 COPY . .
 
 EXPOSE 8000
-CMD ["uvicorn", "content_submission_service.main:start", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "content_submission_service.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
 
 ################################
 # PRODUCTION
@@ -99,4 +99,4 @@ ENV FASTAPI_ENV=production
 COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 WORKDIR /app
 COPY content_submission_service ./content_submission_service
-CMD ["uvicorn", "content_submission_service.main:start", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "content_submission_service.main:app", "--host", "0.0.0.0", "--port", "8000"]

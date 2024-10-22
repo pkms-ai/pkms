@@ -75,12 +75,15 @@ services:
   #     retries: 5
 
   content-submission-service:
-    build: ./services/content-submission-service
+    build:
+      context: ./services/content-submission-service
+      target: ${ENVIRONMENT}
     restart: unless-stopped
     env_file:
       - .env
     depends_on:
-      - message-queue
+      message-queue:
+        condition: service_healthy
     networks:
       - pkms-network
     healthcheck:
@@ -90,12 +93,15 @@ services:
       retries: 5
 
   content-processing-service:
-    build: ./services/content-processing-service
+    build:
+      context: ./services/content-processing-service
+      target: ${ENVIRONMENT}
     restart: unless-stopped
     env_file:
       - .env
     depends_on:
-      - message-queue
+      message-queue:
+        condition: service_healthy
     networks:
       - pkms-network
     healthcheck:
@@ -105,12 +111,15 @@ services:
       retries: 5
 
   crawler-service:
-    build: ./services/crawler-service
+    build:
+      context: ./services/crawler-service
+      target: ${ENVIRONMENT}
     restart: unless-stopped
     env_file:
       - .env
     depends_on:
-      - message-queue
+      message-queue:
+        condition: service_healthy
     networks:
       - pkms-network
     healthcheck:
@@ -120,12 +129,15 @@ services:
       retries: 5
 
   summarizer-service:
-    build: ./services/summarizer-service
+    build:
+      context: ./services/summarizer-service
+      target: ${ENVIRONMENT}
     restart: unless-stopped
     env_file:
       - .env
     depends_on:
-      - message-queue
+      message-queue:
+        condition: service_healthy
     networks:
       - pkms-network
     healthcheck:
@@ -135,12 +147,16 @@ services:
       retries: 5
 
   embedding-service:
-    build: ./services/embedding-service
+    build:
+      context: ./services/embedding-service
+      target: ${ENVIRONMENT}
     env_file:
       - .env
     depends_on:
-      - message-queue
-      - pgvector
+      message-queue:
+        condition: service_healthy
+      pgvector:
+        condition: service_healthy
     networks:
       - pkms-network
     healthcheck:
@@ -150,12 +166,15 @@ services:
       retries: 5
 
   db-service:
-    build: ./services/db-service
+    build:
+      context: ./services/db-service
+      target: ${ENVIRONMENT}
     restart: unless-stopped
     env_file:
       - .env
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - pkms-network
     healthcheck:
@@ -169,11 +188,16 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmq-diagnostics ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     ports:
       - "${RABBITMQ_PORT}:5672"
       - "${RABBITMQ_MANAGEMENT_PORT}:15672"
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
     networks:
       - pkms-network
 
@@ -189,6 +213,15 @@ services:
       - POSTGRES_DB=${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     ports:
       - "${POSTGRES_PORT}:5432"
     networks:
@@ -203,7 +236,8 @@ services:
     volumes:
       - ./infrastructure/databases/postgres/migrations:/flyway/sql # where migration files are stored
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - pkms-network
 
@@ -215,11 +249,20 @@ services:
       - POSTGRES_USER=${VECTOR_DB_USER}
       - POSTGRES_PASSWORD=${VECTOR_DB_PASSWORD}
       - POSTGRES_DB=${VECTOR_DB_NAME}
-    ports:
-      - "${VECTOR_DB_PORT}:5432"
     restart: unless-stopped
     volumes:
       - vector_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -h localhost -U ${VECTOR_DB_USER} -d ${VECTOR_DB_NAME}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    ports:
+      - "${VECTOR_DB_PORT}:5432"
     networks:
       - pkms-network
 

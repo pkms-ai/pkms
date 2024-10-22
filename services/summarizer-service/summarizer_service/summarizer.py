@@ -113,5 +113,5 @@ async def summarize_content(content: Content) -> str:
 
     # Clean and unwrap only the first code block
     summary = unwrap_first_codeblock(summary)
-    logger.info(f"Content summarized: {summary}")
+    logger.info(f"Content summarized: {summary[:100]}")
     return summary

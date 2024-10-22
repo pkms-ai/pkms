@@ -58,6 +58,12 @@ db_config = get_db_config()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    env = settings.ENVIRONMENT
+    port = settings.PORT
+
+    logger.info(f"Starting server in {env} mode on port {port}")
+    logger.info(f"CORS origins: {settings.cors_origins}")
+    logger.info(f"Database host: {db_config.host}")
     # Startup: Create and store the database connection pool
     logger.info("Creating database connection pool")
     app.state.db_pool = await get_db_pool_with_retry()
@@ -188,27 +194,3 @@ async def health_check_db(pool=Depends(get_db_pool_dependency)):
     except Exception as e:
         logger.error(f"Database health check failed: {e}")
         raise HTTPException(status_code=503, detail="Database is unavailable")
-
-
-def start():
-    env = settings.ENVIRONMENT
-    host = "0.0.0.0"
-    port = settings.PORT
-
-    logger.info(f"Starting server in {env} mode on port {port}")
-    logger.info(f"CORS origins: {settings.cors_origins}")
-    logger.info(f"Database host: {db_config.host}")
-
-    try:
-        if env == "development":
-            uvicorn.run("db_service.main:app", host=host, port=port, reload=True)
-        else:
-            uvicorn.run(app, host=host, port=port)
-    except Exception as e:
-        logger.error(f"Error starting the server: {e}")
-    finally:
-        logger.info("Shutting down the server")
-
-
-if __name__ == "__main__":
-    start()

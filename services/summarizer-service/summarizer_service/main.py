@@ -16,6 +16,10 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    env = settings.ENVIRONMENT
+
+    logger.info(f"Starting server in {env} mode")
+    logger.info(f"CORS origins: {settings.cors_origins}")
     # Startup
     consumer = RabbitMQConsumer(
         rabbitmq_url=settings.RABBITMQ_URL,
@@ -62,27 +66,3 @@ app.add_middleware(
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
-
-
-def start():
-    env = settings.ENVIRONMENT
-    host = "0.0.0.0"
-    port = settings.PORT
-
-    logger.info(f"Starting server in {env} mode")
-    logger.info(f"CORS origins: {settings.cors_origins}")
-
-    try:
-        if env == "development":
-            uvicorn.run(
-                "summarizer_service.main:app", host=host, port=port, reload=True
-            )
-        else:
-            uvicorn.run(app, host=host, port=port)
-    except Exception as e:
-        logger.error(f"Error starting the server: {e}")
-        raise
-
-
-if __name__ == "__main__":
-    start()
