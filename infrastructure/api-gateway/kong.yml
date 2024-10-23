@@ -50,6 +50,7 @@ services:
       - name: web-application
         paths:
           - /
+        strip_path: true
         plugins:
           - name: basic-auth # Enable basic authentication plugin
 

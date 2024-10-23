@@ -1,1 +1,1 @@
-- Need a way to initialize the db after the postgress spin up
+- consider using HONO for db-service

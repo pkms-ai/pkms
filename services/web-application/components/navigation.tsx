@@ -3,6 +3,7 @@
 import { BookMarked, Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -14,19 +15,26 @@ import { ContentFilter } from "./content/content-filter";
 import { ContentType } from "@/types/content";
 
 interface NavigationProps {
-  selectedType?: ContentType | "all";
-  onTypeChange?: (type: ContentType | "all") => void;
-  searchQuery?: string;
-  onSearchChange?: (query: string) => void;
+  selectedType: ContentType | "all";
+  searchQuery: string;
 }
 
-export function Navigation({ 
-  selectedType = "all",
-  onTypeChange = () => {},
-  searchQuery = "",
-  onSearchChange = () => {},
-}: NavigationProps) {
+export function Navigation({ selectedType, searchQuery }: NavigationProps) {
   const { setTheme } = useTheme();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const onTypeChange = (type: ContentType | "all") => {
+    const params = new URLSearchParams(searchParams);
+    params.set("type", type);
+    router.push(`/?${params.toString()}`);
+  };
+
+  const onSearchChange = (query: string) => {
+    const params = new URLSearchParams(searchParams);
+    params.set("search", query);
+    router.push(`/?${params.toString()}`);
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">

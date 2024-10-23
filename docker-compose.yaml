@@ -165,6 +165,16 @@ services:
       timeout: 10s
       retries: 5
 
+  web-application:
+    build:
+      context: ./services/web-application/
+    env_file:
+      - .env
+    # ports:
+    #   - "3000:3000"
+    networks:
+      - pkms-network
+
   db-service:
     build:
       context: ./services/db-service
