@@ -14,8 +14,8 @@ services:
   adminer:
     image: adminer
     restart: unless-stopped
-    ports:
-      - 8080:8080
+    # ports:
+    #   - 8080:8080
     networks:
       - pkms-network
   api-gateway:
@@ -205,9 +205,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    ports:
-      - "${RABBITMQ_PORT}:5672"
-      - "${RABBITMQ_MANAGEMENT_PORT}:15672"
+    # ports:
+    #   - "${RABBITMQ_PORT}:5672"
+    #   - "${RABBITMQ_MANAGEMENT_PORT}:15672"
     networks:
       - pkms-network
 
@@ -232,8 +232,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    ports:
-      - "${POSTGRES_PORT}:5432"
+    # ports:
+    #   - "${POSTGRES_PORT}:5432"
     networks:
       - pkms-network
 
@@ -271,8 +271,8 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    ports:
-      - "${VECTOR_DB_PORT}:5432"
+    # ports:
+    #   - "${VECTOR_DB_PORT}:5432"
     networks:
       - pkms-network
 
