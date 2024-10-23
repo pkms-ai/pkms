@@ -35,6 +35,7 @@ async def submit_content(submission: ContentSubmission):
         for attempt in range(settings.RETRY_ATTEMPTS):
             try:
                 await publish_to_queue(queue_name, classified_content.model_dump())
+                logger.info(f"Content submitted to queue: {queue_name}")
                 break
             except Exception as e:
                 logger.warning(f"Attempt {attempt + 1} failed: {e}")

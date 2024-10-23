@@ -1,4 +1,4 @@
-# System Design Document with Folder Structure
+# System Design Document
 
 ## **Table of Contents**
 
@@ -9,39 +9,31 @@
    - 3.2. [Authentication Service](#32-authentication-service)
    - 3.3. [Content Submission Service](#33-content-submission-service)
    - 3.4. [Content Processing Service](#34-content-processing-service)
-   - 3.5. [Notification Service](#35-notification-service)
-   - 3.6. [Search Service](#36-search-service)
-   - 3.7. [Content Visualization Service](#37-content-visualization-service)
-   - 3.8. [Web Application (Frontend)](#38-web-application-frontend)
-   - 3.9. [Databases](#39-databases)
-   - 3.10. [Message Queue (RabbitMQ)](#310-message-queue-rabbitmq)
-   - 3.11. [Graph Database (Neo4j)](#311-graph-database-neo4j)
-   - 3.12. [Reverse Proxy](#312-reverse-proxy)
+   - 3.5. [Database Service](#35-database-service)
+   - 3.6. [Message Queue (RabbitMQ)](#36-message-queue-rabbitmq)
 4. [Data Flow and Integration](#4-data-flow-and-integration)
 5. [Project Folder Structure](#5-project-folder-structure)
 6. [Docker Compose Configuration](#6-docker-compose-configuration)
-7. [Inter-Service Communication](#7-inter-service-communication)
-8. [Technology Stack Summary](#8-technology-stack-summary)
-9. [Security Considerations](#9-security-considerations)
-10. [Scalability and Future Enhancements](#10-scalability-and-future-enhancements)
-11. [Conclusion](#11-conclusion)
+7. [Technology Stack Summary](#7-technology-stack-summary)
+8. [Security Considerations](#8-security-considerations)
+9. [Scalability and Future Enhancements](#9-scalability-and-future-enhancements)
+10. [Conclusion](#10-conclusion)
 
 ---
 
 ## **1. Introduction**
 
-This document outlines the system design for the core functionalities of the Personal Knowledge Management System (PKMS). It provides a detailed overview of the architecture, components, data flow, folder structure, and deployment configuration. The design leverages microservices architecture to ensure modularity, scalability, and maintainability. Each service is containerized using Docker, and the entire system can be orchestrated using Docker Compose.
+This document outlines the system design for the core functionalities of the Personal Knowledge Management System (PKMS) MVP. It provides an overview of the architecture, components, data flow, folder structure, and deployment configuration. The design leverages a microservices architecture to ensure modularity, scalability, and maintainability.
 
 ---
 
 ## **2. System Architecture Overview**
 
-The PKMS is designed as a collection of microservices, each responsible for specific functionalities. The services communicate through RESTful APIs and asynchronous messaging using RabbitMQ. The architecture includes the following layers:
+The PKMS MVP is designed as a collection of microservices, each responsible for specific functionalities. The services communicate through RESTful APIs and asynchronous messaging using RabbitMQ. The architecture includes the following layers:
 
-- **Presentation Layer**: Web application (frontend) and Telegram bot for user interaction.
-- **Business Logic Layer**: Microservices handling content submission, processing, notification, and search.
-- **Data Layer**: Relational database (PostgreSQL), embedding database (qdrant), graph database (Neo4j), and message queue (RabbitMQ).
-- **Integration Layer**: API Gateway and Reverse Proxy for routing and security.
+- **Business Logic Layer**: Microservices handling content submission and processing.
+- **Data Layer**: Relational database (PostgreSQL) and message queue (RabbitMQ).
+- **Integration Layer**: Authentication Service (Keycloak) for security.
 
 **High-Level Architecture Diagram:**
 
@@ -106,78 +98,20 @@ Divided into two processors:
   - Store data in databases.
 - **Technologies**: Python, pytube, OpenAI Whisper.
 
-### **3.5. Notification Service**
+### **3.5. Database Service**
 
-- **Purpose**: Sends notifications to users via Telegram when content processing is complete.
-- **Responsibilities**:
-  - Receive messages from RabbitMQ about processing completion.
-  - Send messages using the Telegram Bot API.
-- **Technologies**: Python, python-telegram-bot library.
-
-### **3.6. Search Service**
-
-- **Purpose**: Provides search capabilities over the stored content.
-- **Responsibilities**:
-  - Handle search queries.
-  - Perform full-text and semantic searches.
-  - Interface with the embedding database.
-- **Technologies**: Python, Elasticsearch, qdrant.
-
-### **3.7. Content Visualization Service**
-
-- **Purpose**: Generates thumbnails and screenshots for content visualization.
-- **Responsibilities**:
-  - Capture screenshots of web pages.
-  - Generate thumbnails for videos.
-  - Store visual assets.
-- **Technologies**: Node.js with Puppeteer, Python with Selenium.
-
-### **3.8. Web Application (Frontend)**
-
-- **Purpose**: Provides the user interface for interacting with the PKMS.
-- **Responsibilities**:
-  - Display content lists with summaries and thumbnails.
-  - Allow content submission and search.
-- **Technologies**: React.js, Vue.js, or Angular.
-
-### **3.9. Databases**
-
-#### **3.9.1. Relational Database (PostgreSQL)**
-
-- **Purpose**: Stores structured data like user profiles, content metadata, summaries.
+- **Purpose**: Stores and manages data in the relational database (PostgreSQL) and message queue (RabbitMQ).
 - **Responsibilities**:
   - Ensure data integrity and relationships.
-- **Technologies**: PostgreSQL 13.
+  - Queue messages for content processing and notifications.
+- **Technologies**: PostgreSQL 13, RabbitMQ with Management Plugin.
 
-#### **3.9.2. Embedding Database (qdrant)**
-
-- **Purpose**: Stores vector embeddings for semantic search.
-- **Responsibilities**:
-  - Perform similarity searches over embeddings.
-- **Technologies**: qdrant v2.0.
-
-### **3.10. Message Queue (RabbitMQ)**
+### **3.6. Message Queue (RabbitMQ)**
 
 - **Purpose**: Facilitates asynchronous communication between services.
 - **Responsibilities**:
   - Queue messages for content processing and notifications.
 - **Technologies**: RabbitMQ with Management Plugin.
-
-### **3.11. Graph Database (Neo4j)**
-
-- **Purpose**: Stores and manages relationships between content entities for enhanced search and recommendations.
-- **Responsibilities**:
-  - Store nodes and relationships representing content, users, tags, and concepts.
-  - Provide graph traversal capabilities.
-- **Technologies**: Neo4j.
-
-### **3.12. Reverse Proxy**
-
-- **Purpose**: Routes external HTTP requests to internal services and handles SSL termination.
-- **Responsibilities**:
-  - Serve as an entry point for web traffic.
-  - Manage SSL certificates.
-- **Technologies**: Nginx.
 
 ---
 
@@ -413,29 +347,7 @@ volumes:
 
 ---
 
-## **7. Inter-Service Communication**
-
-- **API Gateway**:
-  - Routes HTTP requests to appropriate services.
-  - Interacts with the Authentication Service for user validation.
-
-- **RabbitMQ**:
-  - Content Submission Service publishes messages to queues.
-  - Content Processing Services consume messages for processing tasks.
-  - Notification Service consumes messages to send user notifications.
-
-- **Databases**:
-  - Services interact with databases to store and retrieve data.
-  - Content Processing Services write to PostgreSQL, Qdrant, and Neo4j.
-  - Search Service reads from Qdrant and Neo4j.
-
-- **Reverse Proxy**:
-  - Exposes services to the external network.
-  - Handles SSL termination and load balancing.
-
----
-
-## **8. Technology Stack Summary**
+## **7. Technology Stack Summary**
 
 - **Frontend**:
   - **Web Application**: React.js or Vue.js
@@ -461,7 +373,7 @@ volumes:
 
 ---
 
-## **9. Security Considerations**
+## **8. Security Considerations**
 
 - **Authentication and Authorization**:
   - Secure authentication mechanisms.
@@ -479,7 +391,7 @@ volumes:
 
 ---
 
-## **10. Scalability and Future Enhancements**
+## **9. Scalability and Future Enhancements**
 
 - **Microservices Architecture**:
   - Allows independent scaling of services based on load.
@@ -494,7 +406,7 @@ volumes:
 
 ---
 
-## **11. Conclusion**
+## **10. Conclusion**
 
 The system design provides a modular and scalable architecture for the PKMS, focusing on the core functionalities required for the MVP. The use of microservices, containerization, and an organized folder structure allows for flexibility in development and deployment. By integrating key components like RabbitMQ and Neo4j, the system is well-prepared for future enhancements and scaling to meet growing user demands.
 

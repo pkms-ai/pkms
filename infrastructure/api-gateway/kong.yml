@@ -44,12 +44,31 @@ services:
         paths:
           - /api/embedding
 
-  # - name: auth-service
-  #   url: http://auth-service:8080
-  #   routes:
-  #     - name: auth
-  #       paths:
-  #         - /auth
+  - name: web-application
+    url: http://web-application:3000
+    routes:
+      - name: web-application
+        paths:
+          - /
+        plugins:
+          - name: basic-auth # Enable basic authentication plugin
+
+plugins:
+  - name: basic-auth
+    service: web-application
+    config:
+      hide_credentials: true
+  - name: key-auth
+    service: content-submission-service
+    config:
+      key_names:
+        - apikey
+    # - name: auth-service
+    #   url: http://auth-service:8080
+    #   routes:
+    #     - name: auth
+    #       paths:
+    #         - /auth
 # plugins:
 #   - name: cors
 #     config:
@@ -67,3 +86,12 @@ services:
 #         - Content-Type
 #       credentials: true
 #       max_age: 3600
+
+consumers:
+  - username: telegram_client # Create a consumer
+    keyauth_credentials:
+      - key: this_is_a_very_secret_key_for_telegram
+  - username: neo
+    basicauth_credentials:
+      - username: neo
+        password: lifeisgood
