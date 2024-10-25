@@ -1,1 +1,5 @@
-- consider using HONO for db-service
+- transcript service
+- notification service
+- error handling service
+- consider using loco.rs to replace all services
+- research how loco use redis as message queue
