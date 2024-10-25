@@ -17,6 +17,7 @@ class InsertContent(BaseModel):
     url: str
     content_type: ContentType
     title: Optional[str] = None
+    raw_content: Optional[str] = None
     description: Optional[str] = None
     image_url: Optional[str] = None
     summary: Optional[str] = None

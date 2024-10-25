@@ -29,12 +29,13 @@ async def check_url_exists(url: str) -> bool:
     """
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.get(
-                f"{settings.DB_SERVICE_URL}/check_url", params={"url": url}
+            response = await client.post(
+                f"{settings.DB_SERVICE_URL}/contents/check_url", json={"url": url}
             )
             response.raise_for_status()
             return response.json().get("exists", False)
         except httpx.HTTPError as e:
+            logger.info(f"db service url: {settings.DB_SERVICE_URL}")
             logger.error(f"Error checking URL existence: {e}")
             raise ContentProcessingError(f"Error checking URL existence: {str(e)}")
 

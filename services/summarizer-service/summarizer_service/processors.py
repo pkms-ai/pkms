@@ -18,8 +18,8 @@ async def check_url_exists(url: str) -> bool:
     """
     async with httpx.AsyncClient() as client:
         try:
-            response = await client.get(
-                f"{settings.DB_SERVICE_URL}/check_url", params={"url": url}
+            response = await client.post(
+                f"{settings.DB_SERVICE_URL}/contents/check_url", json={"url": url}
             )
             response.raise_for_status()
             return response.json().get("exists", False)
@@ -42,6 +42,7 @@ async def insert_to_db(content: Content) -> dict:
             content_type=content.content_type,
             title=content.title,
             description=content.description,
+            raw_content=content.raw_content,
             summary=content.summary,
             image_url=content.image_url,
             content_id=content.content_id if content.content_id else None,
@@ -55,7 +56,7 @@ async def insert_to_db(content: Content) -> dict:
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{settings.DB_SERVICE_URL}/content",
+                f"{settings.DB_SERVICE_URL}/contents",
                 json=insert_content.model_dump(),  # Ensure correct method based on Pydantic version
             )
             response.raise_for_status()  # Raise exception for 4xx and 5xx responses
