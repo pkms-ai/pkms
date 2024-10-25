@@ -1,0 +1,8 @@
+---
+source: tests/requests/contents.rs
+expression: "(delete_content_request.status_code(), delete_content_request.text())"
+---
+(
+    200,
+    "",
+)

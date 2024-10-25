@@ -1,0 +1,8 @@
+---
+source: tests/requests/contents.rs
+expression: "(update_content_request.status_code(), update_content_request.text())"
+---
+(
+    200,
+    "{\"exists\":true,\"url\":\"https://example.com\"}",
+)

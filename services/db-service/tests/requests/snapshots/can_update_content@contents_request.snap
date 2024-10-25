@@ -1,0 +1,8 @@
+---
+source: tests/requests/contents.rs
+expression: "(update_content_request.status_code(), update_content_request.text())"
+---
+(
+    200,
+    "{\"created_at\":\"DATEZ\",\"updated_at\":\"DATEZ\",\"id\":ID,\"pid\":\"00000000-0000-0000-0000-000000000000\",\"title\":\"Updated Title\",\"url\":\"https://updated-url.com\",\"content_type\":\"Publication\",\"image_url\":null,\"description\":null,\"raw_content\":null,\"summary\":null,\"metadata\":null}",
+)

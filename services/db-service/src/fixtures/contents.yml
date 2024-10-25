@@ -1,0 +1,26 @@
+---
+- id: 1
+  pid: b9147c82-f6ac-48a4-8c0a-5d45bc035e76
+  url: https://example.com
+  content_type: WebArticle
+  title: "Lorem reptinos"
+  image_url: https://picsum.photos/200
+  description: "This is a simple description."
+  raw_content: "This is raw data."
+  summary: "This is the summary."
+  metadata: { json: "abc" }
+  created_at: "2023-11-12T12:34:56.789Z"
+  updated_at: "2023-11-12T12:34:56.789Z"
+
+- id: 2
+  pid: aaaa57aa-8af4-46a8-856a-29deebdcd222
+  url: https://example.com/article2
+  content_type: YoutubeVideo
+  title: "Another Content"
+  image_url: https://picsum.photos/201
+  description: "Another description."
+  raw_content: "This is another raw data."
+  summary: "Another summary."
+  metadata: { json: "xyz" }
+  created_at: "2023-11-13T12:00:00.000Z"
+  updated_at: "2023-11-13T12:00:00.000Z"

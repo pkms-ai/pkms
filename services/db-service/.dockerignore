@@ -1,0 +1,7 @@
+.dockerignore
+target
+**/*.rs.bk  # Ignore any Rust backup files
+.git
+.gitignore
+Dockerfile  # Exclude Dockerfile itself to avoid unnecessary caching issues
+dockerfile

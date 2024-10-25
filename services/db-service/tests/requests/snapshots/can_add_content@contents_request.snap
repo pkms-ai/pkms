@@ -1,0 +1,8 @@
+---
+source: tests/requests/contents.rs
+expression: "(add_content_request.status_code(), add_content_request.text())"
+---
+(
+    200,
+    "{\"created_at\":\"DATEZ\",\"updated_at\":\"DATEZ\",\"id\":ID,\"pid\":\"00000000-0000-0000-0000-000000001234\",\"title\":\"loco\",\"url\":\"https://loco.com\",\"content_type\":\"WebArticle\",\"image_url\":\"https://loco.com/image.jpg\",\"description\":\"loco description\",\"raw_content\":\"loco raw content\",\"summary\":\"loco summary\",\"metadata\":{\"key1\":\"value1\",\"key2\":\"value2\"}}",
+)

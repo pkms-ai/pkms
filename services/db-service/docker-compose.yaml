@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:13
+    restart: unless-stopped
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=loco
+      - POSTGRES_PASSWORD=loco
+      - POSTGRES_DB=myapp_development
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB}",
+        ]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+    networks:
+      - pkms-network
+  adminer:
+    image: adminer
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    networks:
+      - pkms-network
+
+networks:
+  pkms-network:
+    name: pkms-network
+
+volumes:
+  postgres_data:

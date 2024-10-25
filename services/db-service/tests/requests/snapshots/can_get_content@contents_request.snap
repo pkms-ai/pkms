@@ -1,0 +1,8 @@
+---
+source: tests/requests/contents.rs
+expression: "(get_content_request.status_code(), get_content_request.text())"
+---
+(
+    200,
+    "{\"created_at\":\"DATEZ\",\"updated_at\":\"DATEZ\",\"id\":ID,\"pid\":\"b9147c82-f6ac-48a4-8c0a-5d45bc035e76\",\"title\":\"Lorem reptinos\",\"url\":\"https://example.com\",\"content_type\":\"WebArticle\",\"image_url\":\"https://picsum.photos/200\",\"description\":\"This is a simple description.\",\"raw_content\":\"This is raw data.\",\"summary\":\"This is the summary.\",\"metadata\":{\"json\":\"abc\"}}",
+)

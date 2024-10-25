@@ -14,8 +14,8 @@ services:
   adminer:
     image: adminer
     restart: unless-stopped
-    # ports:
-    #   - 8080:8080
+    ports:
+      - 8080:8080
     networks:
       - pkms-network
   api-gateway:
@@ -178,20 +178,31 @@ services:
   db-service:
     build:
       context: ./services/db-service
-      target: ${ENVIRONMENT}
     restart: unless-stopped
     env_file:
       - .env
     depends_on:
       postgres:
         condition: service_healthy
+    # ports:
+    #   - "8000:8000"
     networks:
       - pkms-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
+    entrypoint:
+      [
+        "/usr/app/db_service-cli",
+        "start",
+        "-e",
+        "production",
+        "--binding",
+        "0.0.0.0",
+      ]
+
+    # healthcheck:
+    #   test: ["CMD", "curl", "-f", "http://localhost:8000/_health"]
+    #   interval: 30s
+    #   timeout: 10s
+    #   retries: 5
 
   message-queue:
     image: rabbitmq:3-management
@@ -232,24 +243,24 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-    # ports:
-    #   - "${POSTGRES_PORT}:5432"
+    ports:
+      - "5432:5432"
     networks:
       - pkms-network
 
-  flyway:
-    image: flyway/flyway:latest
-    container_name: flyway_migration
-    env_file:
-      - .env
-    command: -url=jdbc:postgresql://postgres:5432/${POSTGRES_DB} -schemas=public -user=${POSTGRES_USER} -password=${POSTGRES_PASSWORD} -locations=filesystem:/flyway/sql -connectRetries=10 migrate
-    volumes:
-      - ./infrastructure/databases/postgres/migrations:/flyway/sql # where migration files are stored
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - pkms-network
+  # flyway:
+  #   image: flyway/flyway:latest
+  #   container_name: flyway_migration
+  #   env_file:
+  #     - .env
+  #   command: -url=jdbc:postgresql://postgres:5432/${POSTGRES_DB} -schemas=public -user=${POSTGRES_USER} -password=${POSTGRES_PASSWORD} -locations=filesystem:/flyway/sql -connectRetries=10 migrate
+  #   volumes:
+  #     - ./infrastructure/databases/postgres/migrations:/flyway/sql # where migration files are stored
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   networks:
+  #     - pkms-network
 
   pgvector:
     image: pgvector/pgvector:pg16

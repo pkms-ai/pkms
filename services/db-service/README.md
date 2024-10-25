@@ -1,32 +1,51 @@
-# DB Service
+# Welcome to Loco :train:
 
-This service provides database operations for content management.
+[Loco](https://loco.rs) is a web and API framework running on Rust.
 
-## Setup
+This is the **Rest API starter** which includes a `User` model and authentication based on JWT.
 
-1. Install dependencies:   ```
-   poetry install   ```
+## Quick Start
 
-2. Initialize the database:   ```
-   # Create schema only
-   poetry run initialize-db --create-schema
+```sh
+cargo loco start
+```
 
-   # Create schema and populate with sample data (for development)
-   poetry run initialize-db --create-schema --populate-data
+```sh
+$ cargo loco start
+Finished dev [unoptimized + debuginfo] target(s) in 21.63s
+    Running `target/debug/myapp start`
 
-   # Update existing schema
-   poetry run initialize-db --update-schema   ```
+    :
+    :
+    :
 
-3. Run the service:   ```
-   poetry run uvicorn db_service.main:app --reload   ```
+controller/app_routes.rs:203: [Middleware] Adding log trace id
 
-## API Endpoints
+                      ▄     ▀
+                                 ▀  ▄
+                  ▄       ▀     ▄  ▄ ▄▀
+                                    ▄ ▀▄▄
+                        ▄     ▀    ▀  ▀▄▀█▄
+                                          ▀█▄
+▄▄▄▄▄▄▄  ▄▄▄▄▄▄▄▄▄   ▄▄▄▄▄▄▄▄▄▄▄ ▄▄▄▄▄▄▄▄▄ ▀▀█
+ ██████  █████   ███ █████   ███ █████   ███ ▀█
+ ██████  █████   ███ █████   ▀▀▀ █████   ███ ▄█▄
+ ██████  █████   ███ █████       █████   ███ ████▄
+ ██████  █████   ███ █████   ▄▄▄ █████   ███ █████
+ ██████  █████   ███  ████   ███ █████   ███ ████▀
+   ▀▀▀██▄ ▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀  ▀▀▀▀▀▀▀▀▀▀ ██▀
+       ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+                https://loco.rs
 
-- `GET /check_url`: Check if a URL exists in the database
-  - Query parameter: `url`
-  - Returns: `{"url": "<url>", "exists": true/false}`
+environment: development
+   database: automigrate
+     logger: debug
+compilation: debug
+      modes: server
 
-## Docker
+listening on http://localhost:5150
+```
 
-To build and run the Docker container:
+## Getting help
 
+Check out [a quick tour](https://loco.rs/docs/getting-started/tour/) or [the complete guide](https://loco.rs/docs/getting-started/guide/).
