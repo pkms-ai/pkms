@@ -12,12 +12,12 @@ services:
   api-gateway:
     image: kong:latest
     restart: unless-stopped
-    depends_on:
-      - content-submission-service
-      - content-classifier-service
-      - crawler-service
-      - summarizer-service
-      - embedding-service
+    # depends_on:
+    #   - content-submission-service
+    #   - content-classifier-service
+    #   - crawler-service
+    #   - summarizer-service
+    #   - embedding-service
     networks:
       - pkms-network
     environment:
@@ -137,6 +137,21 @@ services:
       message-queue:
         condition: service_healthy
       pgvector:
+        condition: service_healthy
+    networks:
+      - pkms-network
+
+  notifier-service:
+    build:
+      context: ./services/universal_worker
+      target: ${ENVIRONMENT}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PROCESSOR_NAME: notifier
+    depends_on:
+      message-queue:
         condition: service_healthy
     networks:
       - pkms-network

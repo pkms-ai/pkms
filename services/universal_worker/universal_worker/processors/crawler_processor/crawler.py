@@ -52,14 +52,14 @@ def extract_metadata(html) -> Metadata:
     )
 
     canonical_url = get_tag_content("link", {"rel": "canonical"}, "href")
-    keywords = get_tag_content("meta", {"name": "keywords"})
+    # keywords = get_tag_content("meta", {"name": "keywords"})
 
     return Metadata(
         title=title,
         description=description,
         image_url=image_url,
         canonical_url=canonical_url,
-        keywords=keywords,
+        # keywords=keywords,
     )
 
 

@@ -8,7 +8,7 @@ from pydantic import ValidationError
 
 from universal_worker.config import settings
 from universal_worker.exceptions import ContentProcessingError
-from universal_worker.models import Content
+from universal_worker.models import Content, ContentStatus
 from universal_worker.processors import Processor
 
 from .cleaner import clean_markdown
@@ -43,18 +43,19 @@ class CrawlerProcessor(Processor):
     ) -> Tuple[str, Dict[str, str | list[str]]]:
         logger.info(f"Starting content processing: {content}")
         try:
-            validated_content = Content.model_validate(content)
-            markdown, metadata = await crawl_content(validated_content.url)
+            input_content = Content.model_validate(content)
+            markdown, metadata = await crawl_content(input_content.url)
             cleaned_markdown = await clean_markdown(markdown)
 
-            validated_content.raw_content = cleaned_markdown
-            validated_content.title = metadata.title
-            validated_content.description = metadata.description
-            validated_content.image_url = metadata.image_url
-            validated_content.canonical_url = metadata.canonical_url
+            input_content.raw_content = cleaned_markdown
+            input_content.title = metadata.title
+            input_content.description = metadata.description
+            input_content.image_url = metadata.image_url
+            input_content.canonical_url = metadata.canonical_url
+            input_content.status = ContentStatus.CRAWLED
 
             logger.info("Content processed successfully.")
-            return self.output_queues[0], validated_content.model_dump()
+            return self.output_queues[0], input_content.model_dump()
 
         except ValidationError as e:
             logger.error(f"Content validation failed: {e}")

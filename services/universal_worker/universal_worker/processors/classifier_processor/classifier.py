@@ -3,7 +3,7 @@ import uuid
 from openai import OpenAI
 
 from universal_worker.config import settings
-from universal_worker.models import Content, ClassifiedContent
+from universal_worker.models import Content, ClassifiedContent, ContentStatus
 from universal_worker.exceptions import ContentProcessingError
 
 
@@ -43,6 +43,7 @@ def classify_content(input_text: str) -> Content:
             content_id=str(uuid.uuid4()),
             content_type=classified_content.content_type,
             url=classified_content.url,
+            status=ContentStatus.CLASSIFIED,
         )
         return content
     except Exception as e:

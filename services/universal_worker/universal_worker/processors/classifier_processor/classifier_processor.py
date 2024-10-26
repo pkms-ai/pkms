@@ -38,7 +38,7 @@ async def process_bookmark(content: Content) -> Tuple[str, Dict[str, Any]]:
     return settings.CRAWL_QUEUE, content.model_dump()
 
 
-content_processors = {
+content_forwarders = {
     ContentType.WEB_ARTICLE: process_web_article,
     ContentType.PUBLICATION: process_publication,
     ContentType.YOUTUBE_VIDEO: process_youtube_video,
@@ -86,7 +86,7 @@ class ClassifierProcessor(Processor):
 
             logger.debug(f"Content validated as {classified_content.content_type}")
 
-            processor = content_processors.get(classified_content.content_type)
+            processor = content_forwarders.get(classified_content.content_type)
             if processor is None:
                 raise ContentProcessingError(
                     f"Unknown content type: {classified_content.content_type}"
@@ -123,9 +123,6 @@ class ClassifierProcessor(Processor):
         ) -> None:
             if isinstance(error, ContentAlreadyExistsError):
                 logger.info(f"Content already exists: {str(error)}")
-                # if content:
-                # Move to a specific queue for already existing content
-                # await consumer.publish_message(settings.EXISTS_QUEUE, json.dumps(content))
                 await message.ack()
             else:
                 # Re-raise the exception to let the default handler manage it

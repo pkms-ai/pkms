@@ -115,30 +115,33 @@ class RabbitMQConsumer:
                 )
             else:
                 logger.info(f"Processed content. Forwarding to queue: {queue_name}")
+
                 if queue_name not in self.output_queues:
                     raise ValueError(f"Queue {queue_name} is not in output queues")
+
                 sending_message = aio_pika.Message(
-                    body=processed_content.encode(),
+                    body=json.dumps(processed_content).encode("utf-8"),
                     delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
                 )
-
                 # Publish the processed content to the appropriate next queue
                 await self.publish_message(queue_name, sending_message)
 
             await message.ack()
-        except (asyncio.TimeoutError, Exception) as e:
-            # Try the custom handler first if provided
+        except Exception as e:
+            # Use the custom handler if available, otherwise default handling
             if self.process_error_handler:
                 try:
                     await self.process_error_handler(e, content, message)
+                    return
                 except Exception as custom_handler_error:
-                    # If the custom handler fails, fall back to the default
-                    logger.error(f"Unhandled error: {str(custom_handler_error)}")
-                    await self.handle_failed_message(message)
-            else:
-                # Default fallback handling for any unhandled exceptions
-                logger.error(f"Unhandled error: {str(e)}")
-                await self.handle_failed_message(message)
+                    logger.error(
+                        f"Error in custom error handler: {str(custom_handler_error)}"
+                    )
+                    e = custom_handler_error  # Assign custom handler error to fall back to default handling
+
+            # Fallback to default handling if no custom handler or custom handler fails
+            logger.error(f"Unhandled error: {str(e)}")
+            await self.handle_failed_message(message)
 
     async def handle_failed_message(self, message: AbstractIncomingMessage) -> None:
         """

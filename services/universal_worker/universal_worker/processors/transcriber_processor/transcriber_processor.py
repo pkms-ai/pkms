@@ -7,7 +7,7 @@ from pydantic import ValidationError
 
 from universal_worker.config import settings
 from universal_worker.exceptions import ContentProcessingError
-from universal_worker.models import Content
+from universal_worker.models import Content, ContentStatus
 from universal_worker.processors import Processor
 
 from .transcriber import transcribe_content
@@ -40,17 +40,18 @@ class TranscriberProcessor(Processor):
         url = content.get("url")
         logger.info(f"Starting content processing: {url}")
         try:
-            validated_content = Content.model_validate(content)
-            transcribed_content = await transcribe_content(validated_content.url)
+            input_content = Content.model_validate(content)
+            transcribed_content = await transcribe_content(input_content.url)
 
-            validated_content.url = transcribed_content.url
-            validated_content.raw_content = transcribed_content.raw_content
-            validated_content.content_type = transcribed_content.content_type
-            validated_content.title = transcribed_content.title
-            validated_content.description = transcribed_content.description
-            validated_content.image_url = transcribed_content.image_url
+            input_content.url = transcribed_content.url
+            input_content.raw_content = transcribed_content.raw_content
+            input_content.content_type = transcribed_content.content_type
+            input_content.title = transcribed_content.title
+            input_content.description = transcribed_content.description
+            input_content.image_url = transcribed_content.image_url
+            input_content.status = ContentStatus.TRANSCRIBED
 
-            return settings.SUMMARY_QUEUE, validated_content.model_dump()
+            return settings.SUMMARY_QUEUE, input_content.model_dump()
 
         except ValidationError as e:
             logger.error(f"Content validation failed: {e}")

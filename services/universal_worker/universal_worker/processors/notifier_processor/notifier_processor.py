@@ -8,24 +8,24 @@ from pydantic import ValidationError
 
 from universal_worker.config import settings
 from universal_worker.exceptions import ContentProcessingError
-from universal_worker.models import Content, ContentStatus
+from universal_worker.models import Content
 from universal_worker.processors import Processor
 
-from .embedder import embedding_content
+from .notifier import notify
 
 logger = logging.getLogger(__name__)
 
 
-class EmbeddingProcessor(Processor):
+class NotifierProcessor(Processor):
     """Processor class for handling crawling content."""
 
     @property
     def input_queue(self) -> str:
-        return settings.EMBEDDING_QUEUE
+        return settings.NOTIFY_QUEUE
 
     @property
     def exchange_queue(self) -> str:
-        return "embedding_exchange"
+        return "notify_exchange"
 
     @property
     def output_queues(self) -> List[str]:
@@ -38,16 +38,15 @@ class EmbeddingProcessor(Processor):
     async def process_content(
         self, content: Dict[str, Any]
     ) -> Tuple[str, Dict[str, str | list[str]]]:
-        url = content.get("url")
-        logger.info(f"Starting content processing: {url}")
         try:
-            input_content = Content.model_validate(content)
-            await embedding_content(input_content)
-            input_content.status = ContentStatus.EMBEDDED
+            notification_content = Content.model_validate(content)
+            url = notification_content.url
+            logger.info(f"Starting content processing: {url}")
+            await notify(notification_content)
 
-            logger.info("Content embeddings completely.")
+            logger.info("Content notified completely.")
 
-            return "", input_content.model_dump()
+            return "", notification_content.model_dump()
 
         except ValidationError as e:
             logger.error(f"Content validation failed: {e}")
@@ -66,4 +65,15 @@ class EmbeddingProcessor(Processor):
             Coroutine[Any, Any, None],
         ]
     ]:
+        # async def error_handler(
+        #     error: Exception,
+        #     content: Optional[Dict[str, Any]],
+        #     message: AbstractIncomingMessage,
+        # ) -> None:
+        #     # notification is an edge service, we don't wnat to throw error to put in queue
+        #     # simply output the error to the logs, and forget about the message
+        #     logger.info(f"Error processing content: {content} with {error})")
+        #     await message.ack()
+        #
+        # return error_handler
         return None

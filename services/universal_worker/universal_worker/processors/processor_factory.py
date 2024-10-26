@@ -5,7 +5,7 @@ from .embedding_processor import EmbeddingProcessor
 from .classifier_processor import ClassifierProcessor
 from .summarizer_processor import SummarizerProcessor
 from .transcriber_processor import TranscriberProcessor
-# from .summarizer_processor import SummarizerProcessor  # Example other processors
+from .notifier_processor import NotifierProcessor
 
 
 class ProcessorFactory:
@@ -17,6 +17,7 @@ class ProcessorFactory:
         "embedding": EmbeddingProcessor,
         "classifier": ClassifierProcessor,
         "transcriber": TranscriberProcessor,
+        "notifier": NotifierProcessor,
         # Add additional processors here as needed
     }
 

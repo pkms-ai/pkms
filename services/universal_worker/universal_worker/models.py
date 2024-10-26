@@ -55,10 +55,20 @@ class Metadata(BaseModel):
     keywords: Optional[str] = None
 
 
+class ContentStatus(str, Enum):
+    SUBMITTED = "submitted"
+    CLASSIFIED = "classified"
+    TRANSCRIBED = "transcribed"
+    CRAWLED = "crawled"
+    SUMMARIZED = "summarized"
+    EMBEDDED = "embedded"
+
+
 class Content(BaseModel):
-    url: str
     content_id: str
+    url: str
     content_type: ContentType
+    status: ContentStatus
     title: Optional[str] = None
     description: Optional[str] = None
     image_url: Optional[str] = None
