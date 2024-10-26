@@ -1,0 +1,30 @@
+[tool.poetry]
+name = "universal-worker"
+version = "0.1.0"
+description = ""
+authors = ["Nguyen Tran <merlinvn@gmail.com>"]
+readme = "README.md"
+packages = [{ include = "universal_worker", from = "." }]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+google-generativeai = "^0.8.3"
+openai = "^1.52.2"
+pydantic = "^2.9.2"
+aio-pika = "^9.4.3"
+pydantic-settings = "^2.6.0"
+httpx = "^0.27.2"
+crawl4ai = "^0.3.72"
+setuptools = "^75.2.0"
+
+
+langchain-postgres = "^0.0.12"
+langchain = "^0.3.4"
+langchain-openai = "^0.2.3"
+psycopg = {extras = ["binary"], version = "^3.2.3"}
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+start = "universal_worker.main:main"

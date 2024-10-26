@@ -5,6 +5,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     GEMINI_API_KEY: str = "gemini_1234567890"
+    OPEANAI_API_KEY: str = "openai_1234567890"
     RABBITMQ_URL: str = "amqp://guest:guest@localhost:5672/"
     CORS_ORIGINS: List[str] = ["http://localhost:3000"]
     ENVIRONMENT: str = "development"

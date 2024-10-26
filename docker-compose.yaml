@@ -2,8 +2,10 @@ services:
   adminer:
     image: ghcr.io/shyim/adminerevo:latest
     restart: unless-stopped
-    # ports:
-    #   - 8080:8080
+    ports:
+      - 10001:8080
+    environment:
+      - ADMINER_DISABLE_CSRF=true
     networks:
       - pkms-network
 
@@ -12,7 +14,7 @@ services:
     restart: unless-stopped
     depends_on:
       - content-submission-service
-      - content-processing-service
+      - content-classifier-service
       - crawler-service
       - summarizer-service
       - embedding-service
@@ -62,87 +64,60 @@ services:
       retries: 5
       start_period: 30s
 
-  content-processing-service:
+  content-classifier-service:
     build:
-      context: ./services/content-processing-service
+      context: ./services/universal_worker
       target: ${ENVIRONMENT}
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      PROCESSOR_NAME: classifier
     depends_on:
       message-queue:
         condition: service_healthy
     networks:
       - pkms-network
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "python3",
-          "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
 
   crawler-service:
     build:
-      context: ./services/crawler-service
+      context: ./services/universal_worker
       target: ${ENVIRONMENT}
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      PROCESSOR_NAME: crawler
     depends_on:
       message-queue:
         condition: service_healthy
     networks:
       - pkms-network
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "python3",
-          "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
 
   summarizer-service:
     build:
-      context: ./services/summarizer-service
+      context: ./services/universal_worker
       target: ${ENVIRONMENT}
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      PROCESSOR_NAME: summarizer
     depends_on:
       message-queue:
         condition: service_healthy
     networks:
       - pkms-network
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "python3",
-          "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
-        ]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 30s
 
   embedding-service:
     build:
-      context: ./services/embedding-service
+      context: ./services/universal_worker
       target: ${ENVIRONMENT}
+    restart: unless-stopped
     env_file:
       - .env
+    environment:
+      PROCESSOR_NAME: embedding
     depends_on:
       message-queue:
         condition: service_healthy
@@ -150,18 +125,6 @@ services:
         condition: service_healthy
     networks:
       - pkms-network
-    healthcheck:
-      test:
-        [
-          "CMD",
-          "python3",
-          "-c",
-          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')",
-        ]
-      interval: 30s
-      timeout: 10s
-      start_period: 30s
-      retries: 5
 
   web-application:
     build:
@@ -182,8 +145,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    # ports:
-    #   - "8000:8000"
+    ports:
+      - "10002:8000"
     networks:
       - pkms-network
     entrypoint:
@@ -219,9 +182,9 @@ services:
       timeout: 10s
       start_period: 30s
       retries: 5
-    # ports:
-    #   - "${RABBITMQ_PORT}:5672"
-    #   - "${RABBITMQ_MANAGEMENT_PORT}:15672"
+    ports:
+      # - "5672:5672"
+      - "10003:15672"
     networks:
       - pkms-network
 
