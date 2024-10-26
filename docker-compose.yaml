@@ -32,8 +32,8 @@ services:
       - "10000:8000"
     healthcheck:
       test: ["CMD", "kong", "health"]
-      interval: 10s
-      timeout: 5s
+      interval: 30s
+      timeout: 10s
       retries: 5
       start_period: 30s
     volumes:
@@ -206,9 +206,9 @@ services:
           "CMD-SHELL",
           "pg_isready -h localhost -U ${POSTGRES_USER} -d ${POSTGRES_DB}",
         ]
-      interval: 5s
+      interval: 30s
       timeout: 5s
-      retries: 10
+      retries: 5
     ports:
       - "5432:5432"
     networks:
@@ -231,7 +231,7 @@ services:
           "CMD-SHELL",
           "pg_isready -h localhost -U ${VECTOR_DB_USER} -d ${VECTOR_DB_NAME}",
         ]
-      interval: 5s
+      interval: 30s
       timeout: 5s
       retries: 10
     # ports:
