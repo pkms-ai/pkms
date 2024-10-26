@@ -31,3 +31,11 @@ def extract_url(content: str) -> str | None:
     if urls:
         return urls[0]
     return None
+
+
+def contains_url(text: str) -> bool:
+    # Regular expression pattern for URLs
+    url_pattern = re.compile(r"(https?://\S+|www\.\S+)", re.IGNORECASE)
+    # Search for the pattern in the text
+
+    return bool(url_pattern.search(text))

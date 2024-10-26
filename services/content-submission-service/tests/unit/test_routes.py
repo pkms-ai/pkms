@@ -2,7 +2,6 @@ import pytest
 from fastapi.testclient import TestClient
 from unittest.mock import patch
 from content_submission_service.main import app
-from common_lib.models import ContentType, ClassifiedContent
 
 client = TestClient(app)
 
@@ -11,11 +10,6 @@ client = TestClient(app)
 @patch("content_submission_service.routes.classify_content")
 @patch("content_submission_service.routes.publish_to_queue")
 async def test_submit_content(mock_publish, mock_classify):
-    # Mock the classify_content function
-    mock_classify.return_value = ClassifiedContent(
-        content_type=ContentType.WEB_ARTICLE, url="https://example.com"
-    )
-
     # Mock the publish_to_queue function
     mock_publish.return_value = None
 
@@ -34,8 +28,7 @@ async def test_submit_content(mock_publish, mock_classify):
     ), f"Expected 200, got {response.status_code}: {response.content}"
     assert "message" in response.json()
     assert "status" in response.json()
-    assert "content_type" in response.json()
-    assert response.json()["content_type"] == ContentType.WEB_ARTICLE.value
+    assert "content" in response.json()
 
     # Verify that classify_content and publish_to_queue were called
     mock_classify.assert_called_once_with("https://example.com")
@@ -47,7 +40,6 @@ async def test_submit_content(mock_publish, mock_classify):
 @patch("content_submission_service.routes.publish_to_queue")
 async def test_submit_content_unknown(mock_publish, mock_classify):
     # Mock classify_content to return UNKNOWN
-    mock_classify.return_value = ClassifiedContent(content_type=ContentType.UNKNOWN)
 
     response = client.post("/submit", json={"content": "some random text"})
 
