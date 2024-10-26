@@ -22,8 +22,8 @@ langchain-openai = "^0.2.3"
 psycopg = { extras = ["binary"], version = "^3.2.3" }
 youtube-transcript-api = "^0.6.2"
 langchain-community = "^0.3.3"
-
 google-api-python-client = "^2.149.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"

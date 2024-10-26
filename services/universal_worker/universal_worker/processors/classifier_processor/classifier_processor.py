@@ -11,7 +11,7 @@ from universal_worker.exceptions import (
     ContentProcessingError,
     ContentAlreadyExistsError,
 )
-from universal_worker.models import Content, ContentType, SubmissionContent
+from universal_worker.models import Content, ContentType, SubmittedContent
 from universal_worker.processors import Processor
 from universal_worker.utils.db import check_url_exists
 from .classifier import classify_content
@@ -70,8 +70,11 @@ class ClassifierProcessor(Processor):
     ) -> Tuple[str, Dict[str, str | list[str]]]:
         logger.info(f"Starting content processing: {content}")
         try:
-            submission_content = SubmissionContent.model_validate(content)
+            submission_content = SubmittedContent.model_validate(content)
             classified_content = classify_content(submission_content.content)
+            classified_content.source = submission_content.source
+
+            logger.info(f"Got contennt from: {classified_content.source}")
 
             logger.info(f"Classified content from openai: {classified_content}")
 

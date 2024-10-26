@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     SUMMARY_QUEUE: str = "summary_queue"
     ERROR_QUEUE: str = "error_queue"
     EMBEDDING_QUEUE: str = "embedding_queue"
+    NOTIFY_QUEUE: str = "notify_queue"
 
     # DB Service URL
     API_GATEWAY_HOST: str = "localhost"

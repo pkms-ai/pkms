@@ -4,6 +4,15 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
+class TelegramSource(BaseModel):
+    message_id: str
+    chat_id: str
+
+
+class ContentSource(BaseModel):
+    telegram: Optional[TelegramSource] = None
+
+
 class ContentType(str, Enum):
     WEB_ARTICLE = "web_article"
     PUBLICATION = "publication"
@@ -12,13 +21,14 @@ class ContentType(str, Enum):
     UNKNOWN = "unknown"
 
 
-class SubmissionContent(BaseModel):
+class SubmittedContent(BaseModel):
     content: str = Field(
         ...,
         min_length=1,
         max_length=10000,
         json_schema_extra={"example": "https://example.com"},
     )
+    source: Optional[ContentSource] = None
 
 
 # this class will be used by OpenAI to extract structure content
@@ -56,3 +66,4 @@ class Content(BaseModel):
     keywords: Optional[list] = None
     raw_content: Optional[str] = None
     summary: Optional[str] = None
+    source: Optional[ContentSource] = None

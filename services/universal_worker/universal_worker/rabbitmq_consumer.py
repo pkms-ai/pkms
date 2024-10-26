@@ -117,8 +117,13 @@ class RabbitMQConsumer:
                 logger.info(f"Processed content. Forwarding to queue: {queue_name}")
                 if queue_name not in self.output_queues:
                     raise ValueError(f"Queue {queue_name} is not in output queues")
+                sending_message = aio_pika.Message(
+                    body=processed_content.encode(),
+                    delivery_mode=aio_pika.DeliveryMode.PERSISTENT,
+                )
+
                 # Publish the processed content to the appropriate next queue
-                await self.publish_message(queue_name, json.dumps(processed_content))
+                await self.publish_message(queue_name, sending_message)
 
             await message.ack()
         except (asyncio.TimeoutError, Exception) as e:
@@ -182,9 +187,9 @@ class RabbitMQConsumer:
 
         if retry_count < self.max_retries:
             # Requeue the message
-            await self.main_exchange.publish(
+            await self.publish_message(
+                self.input_queue_name,
                 new_message,
-                routing_key=self.input_queue_name,
             )
             logger.info(
                 f"Requeued message: {content.get('url')}, with retry count: {retry_count}"
@@ -192,9 +197,9 @@ class RabbitMQConsumer:
         else:
             # Move to error queue
             new_message.headers["x-error-reason"] = "exceeded_max_retries"
-            await self.main_exchange.publish(
+            await self.publish_message(
+                self.error_queue_name,
                 new_message,
-                routing_key=self.error_queue_name,
             )
             logger.warning(
                 f"Message exceeded max retries. Moved to error queue: {content.get('url')}"
@@ -202,14 +207,14 @@ class RabbitMQConsumer:
 
         await message.ack()
 
-    async def publish_message(self, routing_key: str, message: str) -> None:
+    async def publish_message(
+        self, routing_key: str, message: aio_pika.Message
+    ) -> None:
         if self.main_exchange is None:
             raise RuntimeError("Message exchange is not initialized")
 
         await self.main_exchange.publish(
-            aio_pika.Message(
-                body=message.encode(), delivery_mode=aio_pika.DeliveryMode.PERSISTENT
-            ),
+            message,
             routing_key=routing_key,
         )
         logger.info(f"Published message to queue: {routing_key}")
