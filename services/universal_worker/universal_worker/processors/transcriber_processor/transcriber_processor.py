@@ -3,35 +3,32 @@ from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple
 
 from aio_pika.abc import AbstractIncomingMessage
 
-# from .models import Content
 from pydantic import ValidationError
 
 from universal_worker.config import settings
 from universal_worker.exceptions import ContentProcessingError
-from universal_worker.models import Content, ContentType
+from universal_worker.models import Content
 from universal_worker.processors import Processor
-from universal_worker.utils.db import check_url_exists, insert_to_db
-from universal_worker.utils.url import clean_url
 
-from .summarizer import summarize_content
+from .transcriber import transcribe_content
 
 logger = logging.getLogger(__name__)
 
 
-class SummarizerProcessor(Processor):
+class TranscriberProcessor(Processor):
     """Processor class for handling crawling content."""
 
     @property
     def input_queue(self) -> str:
-        return settings.SUMMARY_QUEUE
+        return settings.TRANSCRIBE_QUEUE
 
     @property
     def exchange_queue(self) -> str:
-        return "summarizer_exchange"
+        return "transcribe_exchange"
 
     @property
     def output_queues(self) -> List[str]:
-        return [settings.EMBEDDING_QUEUE]
+        return [settings.SUMMARY_QUEUE]
 
     @property
     def error_queue(self) -> str:
@@ -40,32 +37,20 @@ class SummarizerProcessor(Processor):
     async def process_content(
         self, content: Dict[str, Any]
     ) -> Tuple[str, Dict[str, str | list[str]]]:
+        url = content.get("url")
+        logger.info(f"Starting content processing: {url}")
         try:
             validated_content = Content.model_validate(content)
-            url = validated_content.url
-            logger.info(f"Starting content processing: {url}")
+            transcribed_content = await transcribe_content(validated_content.url)
 
-            # only clean the url if it is not a youtube video
-            if validated_content.content_type != ContentType.YOUTUBE_VIDEO:
-                if validated_content.canonical_url:
-                    url = validated_content.canonical_url
-                else:
-                    url = clean_url(url)
+            validated_content.url = transcribed_content.url
+            validated_content.raw_content = transcribed_content.raw_content
+            validated_content.content_type = transcribed_content.content_type
+            validated_content.title = transcribed_content.title
+            validated_content.description = transcribed_content.description
+            validated_content.image_url = transcribed_content.image_url
 
-            # if the url is still empty, use the original url
-            if not url:
-                url = validated_content.url
-
-            # check if the URL already exists in the database
-            if await check_url_exists(url):
-                logger.info(f"URL already exists in the database: {url}")
-                raise ContentProcessingError("URL already exists in the database")
-
-            validated_content.summary = await summarize_content(validated_content)
-
-            await insert_to_db(validated_content)
-
-            return settings.EMBEDDING_QUEUE, validated_content.model_dump()
+            return settings.SUMMARY_QUEUE, validated_content.model_dump()
 
         except ValidationError as e:
             logger.error(f"Content validation failed: {e}")

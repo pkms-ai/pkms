@@ -4,6 +4,7 @@ from .crawler_processor import CrawlerProcessor
 from .embedding_processor import EmbeddingProcessor
 from .classifier_processor import ClassifierProcessor
 from .summarizer_processor import SummarizerProcessor
+from .transcriber_processor import TranscriberProcessor
 # from .summarizer_processor import SummarizerProcessor  # Example other processors
 
 
@@ -15,6 +16,7 @@ class ProcessorFactory:
         "summarizer": SummarizerProcessor,
         "embedding": EmbeddingProcessor,
         "classifier": ClassifierProcessor,
+        "transcriber": TranscriberProcessor,
         # Add additional processors here as needed
     }
 

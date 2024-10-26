@@ -1,13 +1,27 @@
 import logging
-import httpx
+from typing import Optional
 
-# from .models import Content
+import httpx
+from pydantic import BaseModel
 
 from universal_worker.config import settings
 from universal_worker.exceptions import ContentProcessingError
-from universal_worker.models import Content, InsertContent
+from universal_worker.models import Content, ContentType
 
 logger = logging.getLogger(__name__)
+
+
+# use to insert new content to database
+class InsertContent(BaseModel):
+    url: str
+    content_type: ContentType
+    title: Optional[str] = None
+    raw_content: Optional[str] = None
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    summary: Optional[str] = None
+    metadata: Optional[dict] = None
+    content_id: Optional[str] = None
 
 
 async def check_url_exists(url: str) -> bool:

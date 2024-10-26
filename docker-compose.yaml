@@ -94,6 +94,21 @@ services:
     networks:
       - pkms-network
 
+  transcriber-service:
+    build:
+      context: ./services/universal_worker
+      target: ${ENVIRONMENT}
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      PROCESSOR_NAME: transcriber
+    depends_on:
+      message-queue:
+        condition: service_healthy
+    networks:
+      - pkms-network
+
   summarizer-service:
     build:
       context: ./services/universal_worker

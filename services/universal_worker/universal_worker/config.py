@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     PROCESSOR_NAME: str = "sample_processor"
     GEMINI_API_KEY: str = "gemini_1234567890"
     OPENAI_API_KEY: str = "openai_1234567890"
+    YOUTUBE_API_KEY: str = "youtube_1234567890"
     RABBITMQ_URL: str = "amqp://guest:guest@localhost:5672/"
     CORS_ORIGINS: List[str] = ["http://localhost:3000"]
     ENVIRONMENT: str = "development"

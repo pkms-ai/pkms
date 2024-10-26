@@ -1,5 +1,4 @@
-- transcript service
-- notification service
-- error handling service
-- consider using loco.rs to replace all services
-- research how loco use redis as message queue
+- notifier processor
+- error handler processor
+
+- consider moving submission service to db service (loco app)

@@ -1,5 +1,6 @@
 from enum import Enum
 from typing import Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -26,25 +27,22 @@ class ClassifiedContent(BaseModel):
     url: Optional[str] = None
 
 
+class TranscribedContent(BaseModel):
+    url: str
+    raw_content: str
+    content_type: ContentType
+    title: Optional[str] = None
+    description: Optional[str] = None
+    image_url: Optional[str] = None
+    video_id: Optional[str] = None
+
+
 class Metadata(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     image_url: Optional[str] = None
     canonical_url: Optional[str] = None
     keywords: Optional[str] = None
-
-
-# use to insert new content to database
-class InsertContent(BaseModel):
-    url: str
-    content_type: ContentType
-    title: Optional[str] = None
-    raw_content: Optional[str] = None
-    description: Optional[str] = None
-    image_url: Optional[str] = None
-    summary: Optional[str] = None
-    metadata: Optional[dict] = None
-    content_id: Optional[str] = None
 
 
 class Content(BaseModel):
