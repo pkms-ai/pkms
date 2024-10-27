@@ -45,6 +45,8 @@ services:
     depends_on:
       message-queue:
         condition: service_healthy
+      db-service:
+        condition: service_healthy
     networks:
       - pkms-network
     healthcheck:

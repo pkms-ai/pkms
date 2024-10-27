@@ -12,7 +12,6 @@ import aio_pika
 from aio_pika.abc import (
     AbstractChannel,
     AbstractConnection,
-    AbstractExchange,
     AbstractIncomingMessage,
     AbstractQueue,
 )
@@ -29,7 +28,6 @@ class RabbitMQConsumer:
         self,
         rabbitmq_url: str,
         input_queue: str,
-        exchange_queue: str,
         error_queue: str,
         output_queues: List[str],
         process_func: Callable[[Dict[str, Any]], Awaitable[Tuple[str, Any]]],
@@ -44,7 +42,6 @@ class RabbitMQConsumer:
     ) -> None:
         self.rabbitmq_url = rabbitmq_url
         self.input_queue_name = input_queue
-        self.exchange_queue_name = exchange_queue
         self.error_queue_name = error_queue
         self.output_queues = output_queues
         self.process_func = process_func
@@ -54,7 +51,6 @@ class RabbitMQConsumer:
         self.connection: Optional[AbstractConnection] = None
         self.channel: Optional[AbstractChannel] = None
         self.input_queue: Optional[AbstractQueue] = None
-        self.main_exchange: Optional[AbstractExchange] = None
         self.error_queue: Optional[AbstractQueue] = None
 
     async def connect(self) -> None:
@@ -77,11 +73,6 @@ class RabbitMQConsumer:
         if self.channel is None:
             raise RuntimeError("Channel is not initialized")
 
-        # Declare the message exchange
-        self.main_exchange = await self.channel.declare_exchange(
-            self.exchange_queue_name, aio_pika.ExchangeType.DIRECT, durable=True
-        )
-
         # Declare all necessary queues
         queues_to_declare = [
             self.input_queue_name,
@@ -90,9 +81,7 @@ class RabbitMQConsumer:
 
         for queue_name in queues_to_declare:
             queue = await self.channel.declare_queue(queue_name, durable=True)
-            # Bind the queue to the message exchange with the appropriate routing key
-            await queue.bind(self.main_exchange, routing_key=queue_name)
-            logger.info(f"Declared and bound queue: {queue_name}")
+            logger.info(f"Declared and bound queue: {queue.name}")
 
         # Set the content processing queue
         self.input_queue = await self.channel.get_queue(self.input_queue_name)
@@ -175,9 +164,6 @@ class RabbitMQConsumer:
         body = message.body.decode()
         content: Dict[str, Any] = json.loads(body)
 
-        if self.main_exchange is None:
-            raise RuntimeError("Message exchange is not initialized")
-
         # Preserve existing headers if they exist, otherwise start with an empty dict
         existing_headers = message.headers if hasattr(message, "headers") else {}
         new_headers = {**existing_headers, "x-retry-count": retry_count}
@@ -189,6 +175,8 @@ class RabbitMQConsumer:
         )
 
         if retry_count < self.max_retries:
+            # sleep for 10 seconds before requeuing the message
+            await asyncio.sleep(10)
             # Requeue the message
             await self.publish_message(
                 self.input_queue_name,
@@ -213,13 +201,10 @@ class RabbitMQConsumer:
     async def publish_message(
         self, routing_key: str, message: aio_pika.Message
     ) -> None:
-        if self.main_exchange is None:
-            raise RuntimeError("Message exchange is not initialized")
+        if self.channel is None:
+            raise RuntimeError("Channel is not initialized")
 
-        await self.main_exchange.publish(
-            message,
-            routing_key=routing_key,
-        )
+        await self.channel.default_exchange.publish(message, routing_key=routing_key)
         logger.info(f"Published message to queue: {routing_key}")
 
     async def start_consuming(self) -> None:
@@ -236,17 +221,19 @@ class RabbitMQConsumer:
         Main loop that connects to RabbitMQ, sets up the queues, and starts consuming messages.
         Implements error handling and reconnection logic.
         """
+        backoff_time = 5
         while True:
             try:
                 await self.connect()
                 await self.setup_queues()
-                await self.start_consuming()
-
+                await asyncio.wait_for(self.start_consuming(), timeout=60)
+                # await self.start_consuming()
                 # Keep the consumer running, but allow for interruption
                 await asyncio.Future()
             except aio_pika.exceptions.AMQPConnectionError as e:
                 logger.warning(f"RabbitMQ connection error: {e}. Reconnecting...")
-                await asyncio.sleep(5)
+                await asyncio.sleep(backoff_time)
+                backoff_time = min(backoff_time * 2, 60)
             except asyncio.CancelledError:
                 logger.info("RabbitMQ consumer is shutting down...")
                 break
@@ -254,12 +241,30 @@ class RabbitMQConsumer:
                 logger.error(f"Unexpected error: {e}")
                 await asyncio.sleep(5)
             finally:
-                if self.connection and not self.connection.is_closed:
+                if (
+                    self.connection
+                    and self.connection is not None
+                    and self.connection.is_closed is False
+                ):
                     await self.connection.close()
+                # reset backoff time after successful connection
+                backoff_time = 5
 
     async def stop(self):
         logger.info("Shutting down consumer")
-        if self.channel and not self.channel.is_closed:
-            await self.channel.close()
-        if self.connection and not self.connection.is_closed:
-            await self.connection.close()
+        try:
+            if self.channel and not self.channel.is_closed:
+                await self.channel.close()
+                logger.info("Channel closed")
+        except Exception as e:
+            logger.error(f"Error closing channel: {e}")
+
+        try:
+            if self.connection and not self.connection.is_closed:
+                await self.connection.close()
+                logger.info("Connection closed")
+        except Exception as e:
+            logger.error(f"Error closing connection: {e}")
+
+        # Optionally, set a flag here if double shutdown protection is needed
+        # self._is_shutting_down = True

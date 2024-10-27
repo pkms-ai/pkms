@@ -5,28 +5,43 @@ from .config import settings
 from .rabbitmq_consumer import RabbitMQConsumer
 from .processors import ProcessorFactory
 
+import signal
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
 async def start():
-    # Get the processor type from the configuration or environment variable
-    processor_name = settings.PROCESSOR_NAME
-    processor = ProcessorFactory.create_processor(processor_name)
+    try:
+        # Get the processor type from the configuration or environment variable
+        processor_name = settings.PROCESSOR_NAME
+        processor = ProcessorFactory.create_processor(processor_name)
 
-    # Initialize RabbitMQ consumer
-    consumer = RabbitMQConsumer(
-        rabbitmq_url=settings.RABBITMQ_URL,
-        input_queue=processor.input_queue,
-        exchange_queue=processor.exchange_queue,
-        error_queue=processor.error_queue,
-        output_queues=processor.output_queues,
-        process_func=processor.process_content,
-        process_error_handler=processor.handle_error,
-    )
+        # Initialize RabbitMQ consumer
+        consumer = RabbitMQConsumer(
+            rabbitmq_url=settings.RABBITMQ_URL,
+            input_queue=processor.input_queue,
+            error_queue=processor.error_queue,
+            output_queues=processor.output_queues,
+            process_func=processor.process_content,
+            process_error_handler=processor.handle_error,
+        )
 
-    # Start the consumer
-    await consumer.run()
+        # Signal handling for graceful shutdown
+        def stop():
+            logger.info("Shutting down consumer...")
+            asyncio.create_task(consumer.stop())
+            loop.call_soon(loop.stop)  # Schedule loop.stop() after stop completes
+
+        loop = asyncio.get_event_loop()
+        loop.add_signal_handler(signal.SIGTERM, stop)
+        loop.add_signal_handler(signal.SIGINT, stop)
+
+        # Start the consumer
+        await consumer.run()
+    except Exception as e:
+        logger.error(f"Failed to start consumer: {e}")
+        raise
 
 
 def main():
