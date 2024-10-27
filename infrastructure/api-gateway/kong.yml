@@ -23,34 +23,6 @@ services:
         paths:
           - /api/content-submission
 
-  - name: content-processing-service
-    url: http://content-processing-service:8000
-    routes:
-      - name: content-processing-route
-        paths:
-          - /api/content-processing
-
-  - name: crawler-service
-    url: http://crawler-service:8000
-    routes:
-      - name: crawler-route
-        paths:
-          - /api/crawler
-
-  - name: summarizer-service
-    url: http://summarizer-service:8000
-    routes:
-      - name: summarizer-route
-        paths:
-          - /api/summarizer
-
-  - name: embedding-service
-    url: http://embedding-service:8000
-    routes:
-      - name: embedding-route
-        paths:
-          - /api/embedding
-
   - name: web-application
     url: http://web-application:3000
     routes:

@@ -12,12 +12,8 @@ services:
   api-gateway:
     image: kong:latest
     restart: unless-stopped
-    # depends_on:
-    #   - content-submission-service
-    #   - content-classifier-service
-    #   - crawler-service
-    #   - summarizer-service
-    #   - embedding-service
+    depends_on:
+      - content-submission-service
     networks:
       - pkms-network
     environment:
