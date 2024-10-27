@@ -8,8 +8,15 @@ from pydantic import ValidationError
 
 from universal_worker.config import settings
 from universal_worker.exceptions import ContentProcessingError
-from universal_worker.models import Content, ContentType, ContentStatus
+from universal_worker.models import (
+    Content,
+    ContentStatus,
+    ContentType,
+    NotificationMessage,
+    NotificationType,
+)
 from universal_worker.processors import Processor
+from universal_worker.processors.notifier_processor.notifier import notify
 from universal_worker.utils.db import check_url_exists, insert_to_db
 from universal_worker.utils.url import clean_url
 
@@ -65,6 +72,16 @@ class SummarizerProcessor(Processor):
             input_content.status = ContentStatus.SUMMARIZED
 
             await insert_to_db(input_content)
+
+            await notify(
+                NotificationMessage(
+                    url=input_content.url,
+                    status=input_content.status,
+                    notification_type=NotificationType.INFO,
+                    source=input_content.source,
+                    message=f"Content has been summarized successfully.\n {input_content.summary}",
+                )
+            )
 
             return settings.EMBEDDING_QUEUE, input_content.model_dump()
 

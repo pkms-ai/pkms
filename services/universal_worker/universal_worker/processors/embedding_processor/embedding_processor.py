@@ -8,8 +8,14 @@ from pydantic import ValidationError
 
 from universal_worker.config import settings
 from universal_worker.exceptions import ContentProcessingError
-from universal_worker.models import Content, ContentStatus
+from universal_worker.models import (
+    Content,
+    ContentStatus,
+    NotificationMessage,
+    NotificationType,
+)
 from universal_worker.processors import Processor
+from universal_worker.utils.notifier import notify
 
 from .embedder import embedding_content
 
@@ -46,6 +52,16 @@ class EmbeddingProcessor(Processor):
             input_content.status = ContentStatus.EMBEDDED
 
             logger.info("Content embeddings completely.")
+
+            await notify(
+                NotificationMessage(
+                    url=input_content.url,
+                    status=input_content.status,
+                    notification_type=NotificationType.INFO,
+                    source=input_content.source,
+                    message="Content has been processed successfully.",
+                )
+            )
 
             return "", input_content.model_dump()
 

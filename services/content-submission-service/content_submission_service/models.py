@@ -1,24 +1,16 @@
-from typing import Optional, Dict, Any
+from typing import Optional
+from pydantic import BaseModel
 
-from pydantic import BaseModel, Field
+
+class TelegramSource(BaseModel):
+    message_id: str
+    chat_id: str
+
+
+class ContentSource(BaseModel):
+    telegram: Optional[TelegramSource] = None
 
 
 class ContentSubmission(BaseModel):
-    content: str = Field(
-        ...,
-        min_length=1,
-        max_length=10000,
-        json_schema_extra={"example": "https://example.com"},
-    )
-    source: Optional[Dict[str, Any]] = Field(
-        None,
-        description="Optional metadata dictionary for the content source",
-        json_schema_extra={
-            "example": {
-                "telegram": {
-                    "messagge_id": "123456",
-                    "chat_id": "123456",
-                }
-            }
-        },
-    )
+    content: str
+    source: Optional[ContentSource] = None

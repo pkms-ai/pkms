@@ -8,7 +8,7 @@ from pydantic import ValidationError
 
 from universal_worker.config import settings
 from universal_worker.exceptions import ContentProcessingError
-from universal_worker.models import Content
+from universal_worker.models import NotificationMessage
 from universal_worker.processors import Processor
 
 from .notifier import notify
@@ -39,14 +39,14 @@ class NotifierProcessor(Processor):
         self, content: Dict[str, Any]
     ) -> Tuple[str, Dict[str, str | list[str]]]:
         try:
-            notification_content = Content.model_validate(content)
-            url = notification_content.url
+            notification_message = NotificationMessage.model_validate(content)
+            url = notification_message.url
             logger.info(f"Starting content processing: {url}")
-            await notify(notification_content)
+            await notify(notification_message)
 
             logger.info("Content notified completely.")
 
-            return "", notification_content.model_dump()
+            return "", notification_message.model_dump()
 
         except ValidationError as e:
             logger.error(f"Content validation failed: {e}")

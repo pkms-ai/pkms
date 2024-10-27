@@ -62,6 +62,7 @@ class ContentStatus(str, Enum):
     CRAWLED = "crawled"
     SUMMARIZED = "summarized"
     EMBEDDED = "embedded"
+    COMPLETED = "completed"
 
 
 class Content(BaseModel):
@@ -77,3 +78,17 @@ class Content(BaseModel):
     raw_content: Optional[str] = None
     summary: Optional[str] = None
     source: Optional[ContentSource] = None
+
+
+class NotificationType(str, Enum):
+    INFO = "info"
+    ALERT = "alert"
+    ERROR = "error"
+
+
+class NotificationMessage(BaseModel):
+    url: str
+    status: ContentStatus
+    notification_type: Optional[NotificationType] = NotificationType.INFO
+    source: Optional[ContentSource] = None
+    message: Optional[str] = None

@@ -1,39 +1,39 @@
 import logging
 
 from universal_worker.exceptions import ContentProcessingError
-from universal_worker.models import Content
+from universal_worker.models import NotificationMessage
 from universal_worker.config import settings
 import httpx
 
 logger = logging.getLogger(__name__)
 
 
-def build_response_message(content: Content) -> str:
-    # if content.error:
-    #     return f"Content has failed with error: {content.error}"
-    # return f"Content has been {content.status.value} successfully."
-    return "under construction"
+def build_response_message(message: NotificationMessage) -> str:
+    if message.message:
+        return message.message
+    return f"Content has been {message.status.value} successfully"
 
 
-async def simple_notytify(content: Content) -> None:
-    logger.info(build_response_message(content))
+async def simple_notytify(message: NotificationMessage) -> None:
+    logger.info(build_response_message(message))
 
 
-async def notify_telegram(content: Content) -> None:
-    if content.source is None or content.source.telegram is None:
+async def notify_telegram(message: NotificationMessage) -> None:
+    if message.source is None or message.source.telegram is None:
         # should not be here but just in case
         logger.info(
-            f"Content source or Telegram source is not available for content: {content.url}"
+            f"Content source or Telegram source is not available for content: {message.url}"
         )
+        await simple_notytify(message)
         return
 
-    telegram_source = content.source.telegram
+    telegram_source = message.source.telegram
 
-    logger.info(f"Sending notification to Telegram for content: {content.url}")
+    logger.info(f"Sending notification to Telegram for content: {message.url}")
     # Send notification to Telegram
     url = f"https://api.telegram.org/bot{settings.TELEGRAM_BOT_TOKEN}/sendMessage"
 
-    response_message = build_response_message(content)
+    response_message = build_response_message(message)
     payload = {
         "chat_id": telegram_source.chat_id,
         "reply_to_message_id": telegram_source.message_id,
@@ -44,7 +44,7 @@ async def notify_telegram(content: Content) -> None:
         try:
             response = await client.post(url, json=payload)
             if response.status_code == 200:
-                logger.info(f"Notification sent to Telegram for content: {content.url}")
+                logger.info(f"Notification sent to Telegram for content: {message.url}")
             else:
                 logger.error(
                     f"Failed to send notification to Telegram. Status: {response.status_code}, Error: {response.text}"
@@ -60,29 +60,30 @@ notifiers = {
 }
 
 
-async def notify(content: Content) -> None:
+async def notify(message: NotificationMessage) -> None:
     """Notify the user about the content."""
     try:
-        if content.source is None:
-            logger.info(f"Content source is not available for content: {content}")
+        if message.source is None:
+            logger.info(f"Content source is not available for content: {message.url}")
+            await simple_notytify(message)
             return
 
-        logger.info(f"Sending notification for content: {content}")
+        logger.info(f"Sending notification for content: {message.url}")
         # Send notification to the user
         # Dynamically find the key in ContentSource that has data
         found = False
         for key, notifier in notifiers.items():
-            source_data = getattr(content.source, key, None)
+            source_data = getattr(message.source, key, None)
             if source_data is not None:
-                await notifier(content)
-                logger.info(f"Notification sent for content: {content}")
+                await notifier(message)
+                logger.info(f"Notification sent for content: {message.url}")
                 found = True
 
         if not found:
-            await simple_notytify(content)
-            logger.info(f"No valid notifier found for content source: {content.source}")
+            await simple_notytify(message)
+            logger.info(f"No valid notifier found for content: {message.url}")
     except Exception as e:
-        logger.error(f"Error sending notification for content: {content}: {e}")
+        logger.error(f"Error sending notification for content: {message.url}: {e}")
         raise ContentProcessingError(
-            f"Error sending notification for content: {content}: {e}"
+            f"Error sending notification for content: {message.url}: {e}"
         )
