@@ -22,7 +22,9 @@ def get_video_details(video_id, api_key):
         return {
             "title": video_info["title"],
             "description": video_info["description"],
-            "image_url": video_info["thumbnails"]["standard"]["url"],
+            "image_url": video_info.get("thumbnails", {})
+            .get("standard", {})
+            .get("url", "No Image Available"),
         }
     return None
 
