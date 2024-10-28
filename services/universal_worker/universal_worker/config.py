@@ -33,6 +33,7 @@ class Settings(BaseSettings):
     VECTOR_DB_PASSWORD: str = "vector_pass"
     VECTOR_DB_PORT: int = 6024
     VECTOR_DB_NAME: str = "pkms_vector"
+    COLLECTION_NAME: str = "pkms_collection"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "allow"}
 
