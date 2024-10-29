@@ -78,6 +78,7 @@ async def crawl_content(url: str) -> Tuple[str, Metadata]:
             exclude_external_links=False,  # Default is True
             exclude_social_media_links=True,  # Default is True
             exclude_external_images=False,  # Default is False
+            remove_overlay_elements=True,  # Default is False
             # social_media_domains = ["facebook.com", "twitter.com", "instagram.com", ...] Here you can add more domains, default supported domains are in config.py
             html2text={
                 "escape_dot": False,
