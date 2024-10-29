@@ -66,7 +66,10 @@ def extract_metadata(html) -> Metadata:
 async def crawl_content(url: str) -> Tuple[str, Metadata]:
     logger.info(f"Starting content crawling: {url}")
 
-    async with AsyncWebCrawler(verbose=True) as crawler:
+    async with AsyncWebCrawler(
+        verbose=True,
+        user_agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+    ) as crawler:
         result = await crawler.arun(
             url=url,
             screenshot=False,
