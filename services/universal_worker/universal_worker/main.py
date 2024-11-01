@@ -1,11 +1,11 @@
 import asyncio
 import logging
-
-from .config import settings
-from .rabbitmq_consumer import RabbitMQConsumer
-from .processors import ProcessorFactory
-
 import signal
+
+from workflow_base import RabbitMQConsumer, WorkflowManager
+from .config import settings
+from .workflow_config import WorkflowConfig
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -15,9 +15,10 @@ async def start():
     try:
         # Get the processor type from the configuration or environment variable
         processor_name = settings.PROCESSOR_NAME
-        processor = ProcessorFactory.create_processor(processor_name)
-
-        # Initialize RabbitMQ consumer
+        workflow_config = WorkflowConfig()
+        workflow_manager = WorkflowManager(workflow_config)
+        processor = workflow_manager.create_processor(processor_name)
+        # # Initialize RabbitMQ consumer
         consumer = RabbitMQConsumer(
             rabbitmq_url=settings.RABBITMQ_URL,
             input_queue=processor.input_queue,

@@ -15,17 +15,17 @@ from universal_worker.models import (
     NotificationMessage,
     NotificationType,
 )
-from universal_worker.processors import Processor
-from universal_worker.processors.notifier_processor.notifier import notify
+from workflow_base import BaseProcessor
 from universal_worker.utils.db import check_url_exists, insert_to_db
 from universal_worker.utils.url import clean_url
+from universal_worker.utils.notifier import notify
 
 from .summarizer import summarize_content
 
 logger = logging.getLogger(__name__)
 
 
-class SummarizerProcessor(Processor):
+class SummarizerProcessor(BaseProcessor):
     """Processor class for handling crawling content."""
 
     @property

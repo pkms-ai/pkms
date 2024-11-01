@@ -9,14 +9,14 @@ from pydantic import ValidationError
 from universal_worker.config import settings
 from universal_worker.exceptions import ContentProcessingError
 from universal_worker.models import NotificationMessage
-from universal_worker.processors import Processor
+from workflow_base import BaseProcessor
 
 from .notifier import notify
 
 logger = logging.getLogger(__name__)
 
 
-class NotifierProcessor(Processor):
+class NotifierProcessor(BaseProcessor):
     """Processor class for handling crawling content."""
 
     @property

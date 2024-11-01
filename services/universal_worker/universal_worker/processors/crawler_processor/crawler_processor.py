@@ -9,7 +9,7 @@ from pydantic import ValidationError
 from universal_worker.config import settings
 from universal_worker.exceptions import ContentProcessingError
 from universal_worker.models import Content, ContentStatus
-from universal_worker.processors import Processor
+from workflow_base import BaseProcessor
 
 from .cleaner import clean_markdown
 
@@ -19,24 +19,8 @@ from .crawler import crawl_content
 logger = logging.getLogger(__name__)
 
 
-class CrawlerProcessor(Processor):
+class CrawlerProcessor(BaseProcessor):
     """Processor class for handling crawling content."""
-
-    @property
-    def input_queue(self) -> str:
-        return settings.CRAWL_QUEUE
-
-    @property
-    def exchange_queue(self) -> str:
-        return "crawler_exchange"
-
-    @property
-    def output_queues(self) -> List[str]:
-        return [settings.SUMMARY_QUEUE]
-
-    @property
-    def error_queue(self) -> str:
-        return settings.ERROR_QUEUE
 
     async def process_content(
         self, content: Dict[str, Any]
@@ -55,7 +39,7 @@ class CrawlerProcessor(Processor):
             input_content.status = ContentStatus.CRAWLED
 
             logger.info("Content processed successfully.")
-            return self.output_queues[0], input_content.model_dump()
+            return settings.SUMMARY_QUEUE, input_content.model_dump()
 
         except ValidationError as e:
             logger.error(f"Content validation failed: {e}")

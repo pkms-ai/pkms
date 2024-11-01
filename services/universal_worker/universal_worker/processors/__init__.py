@@ -1,11 +1,16 @@
 # __init__.py in processors module
-
-from .processor import Processor
-from .processor_factory import ProcessorFactory
-
-# from .summarizer_processor import SummarizerProcessor
+from .classifier_processor import ClassifierProcessor
+from .crawler_processor import CrawlerProcessor
+from .embedding_processor import EmbeddingProcessor
+from .notifier_processor import NotifierProcessor
+from .summarizer_processor import SummarizerProcessor
+from .transcriber_processor import TranscriberProcessor
 
 __all__ = [
-    "ProcessorFactory",
-    "Processor",
+    "ClassifierProcessor",
+    "CrawlerProcessor",
+    "EmbeddingProcessor",
+    "SummarizerProcessor",
+    "TranscriberProcessor",
+    "NotifierProcessor",
 ]

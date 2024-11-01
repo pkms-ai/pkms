@@ -5,17 +5,17 @@ from aio_pika.abc import AbstractIncomingMessage
 
 # from .models import Content
 from pydantic import ValidationError
+from workflow_base import BaseProcessor
 
 from universal_worker.config import settings
 from universal_worker.exceptions import (
-    ContentProcessingError,
     ContentAlreadyExistsError,
+    ContentProcessingError,
 )
 from universal_worker.models import Content, ContentType, SubmittedContent
-from universal_worker.processors import Processor
 from universal_worker.utils.db import check_url_exists
-from .classifier import classify_content
 
+from .classifier import classify_content
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +46,7 @@ content_forwarders = {
 }
 
 
-class ClassifierProcessor(Processor):
+class ClassifierProcessor(BaseProcessor):
     """Processor class for handling crawling content."""
 
     @property

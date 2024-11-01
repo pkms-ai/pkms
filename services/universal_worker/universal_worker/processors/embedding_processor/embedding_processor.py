@@ -14,7 +14,7 @@ from universal_worker.models import (
     NotificationMessage,
     NotificationType,
 )
-from universal_worker.processors import Processor
+from workflow_base import BaseProcessor
 from universal_worker.utils.notifier import notify
 
 from .embedder import embedding_content
@@ -22,7 +22,7 @@ from .embedder import embedding_content
 logger = logging.getLogger(__name__)
 
 
-class EmbeddingProcessor(Processor):
+class EmbeddingProcessor(BaseProcessor):
     """Processor class for handling crawling content."""
 
     @property

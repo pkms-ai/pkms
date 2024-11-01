@@ -8,14 +8,14 @@ from pydantic import ValidationError
 from universal_worker.config import settings
 from universal_worker.exceptions import ContentProcessingError
 from universal_worker.models import Content, ContentStatus
-from universal_worker.processors import Processor
+from workflow_base import BaseProcessor
 
 from .transcriber import transcribe_content
 
 logger = logging.getLogger(__name__)
 
 
-class TranscriberProcessor(Processor):
+class TranscriberProcessor(BaseProcessor):
     """Processor class for handling crawling content."""
 
     @property
