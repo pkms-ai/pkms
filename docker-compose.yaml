@@ -36,9 +36,7 @@ services:
       - ./infrastructure/api-gateway/kong.yml:/usr/local/kong/declarative/kong.yml:ro
 
   content-submission-service:
-    build:
-      context: ./services/content-submission-service
-      target: ${ENVIRONMENT}
+    image: content-manager:latest
     restart: unless-stopped
     env_file:
       - .env
@@ -63,9 +61,7 @@ services:
       start_period: 30s
 
   content-classifier-service:
-    build:
-      context: ./services/universal_worker
-      target: ${ENVIRONMENT}
+    image: universal-worker:latest
     restart: unless-stopped
     env_file:
       - .env
@@ -78,9 +74,7 @@ services:
       - pkms-network
 
   crawler-service:
-    build:
-      context: ./services/universal_worker
-      target: ${ENVIRONMENT}
+    image: universal-worker:latest
     restart: unless-stopped
     env_file:
       - .env
@@ -93,9 +87,7 @@ services:
       - pkms-network
 
   transcriber-service:
-    build:
-      context: ./services/universal_worker
-      target: ${ENVIRONMENT}
+    image: universal-worker:latest
     restart: unless-stopped
     env_file:
       - .env
@@ -108,9 +100,7 @@ services:
       - pkms-network
 
   summarizer-service:
-    build:
-      context: ./services/universal_worker
-      target: ${ENVIRONMENT}
+    image: universal-worker:latest
     restart: unless-stopped
     env_file:
       - .env
@@ -123,9 +113,7 @@ services:
       - pkms-network
 
   embedding-service:
-    build:
-      context: ./services/universal_worker
-      target: ${ENVIRONMENT}
+    image: universal-worker:latest
     restart: unless-stopped
     env_file:
       - .env
@@ -140,9 +128,7 @@ services:
       - pkms-network
 
   notifier-service:
-    build:
-      context: ./services/universal_worker
-      target: ${ENVIRONMENT}
+    image: universal-worker:latest
     restart: unless-stopped
     env_file:
       - .env

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple
+from typing import Any, Callable, Coroutine, Dict, Optional, Tuple
 
 from aio_pika.abc import AbstractIncomingMessage
 
@@ -17,22 +17,6 @@ logger = logging.getLogger(__name__)
 
 class TranscriberProcessor(BaseProcessor):
     """Processor class for handling crawling content."""
-
-    @property
-    def input_queue(self) -> str:
-        return settings.TRANSCRIBE_QUEUE
-
-    @property
-    def exchange_queue(self) -> str:
-        return "transcribe_exchange"
-
-    @property
-    def output_queues(self) -> List[str]:
-        return [settings.SUMMARY_QUEUE]
-
-    @property
-    def error_queue(self) -> str:
-        return settings.ERROR_QUEUE
 
     async def process_content(
         self, content: Dict[str, Any]

@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple
+from typing import Any, Callable, Coroutine, Dict, Optional, Tuple
 
 from aio_pika.abc import AbstractIncomingMessage
 

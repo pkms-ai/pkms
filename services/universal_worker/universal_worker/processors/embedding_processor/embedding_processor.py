@@ -1,12 +1,11 @@
 import logging
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple
+from typing import Any, Callable, Coroutine, Dict, Optional, Tuple
 
 from aio_pika.abc import AbstractIncomingMessage
 
 # from .models import Content
 from pydantic import ValidationError
 
-from universal_worker.config import settings
 from universal_worker.exceptions import ContentProcessingError
 from universal_worker.models import (
     Content,
@@ -24,22 +23,6 @@ logger = logging.getLogger(__name__)
 
 class EmbeddingProcessor(BaseProcessor):
     """Processor class for handling crawling content."""
-
-    @property
-    def input_queue(self) -> str:
-        return settings.EMBEDDING_QUEUE
-
-    @property
-    def exchange_queue(self) -> str:
-        return "embedding_exchange"
-
-    @property
-    def output_queues(self) -> List[str]:
-        return []
-
-    @property
-    def error_queue(self) -> str:
-        return settings.ERROR_QUEUE
 
     async def process_content(
         self, content: Dict[str, Any]

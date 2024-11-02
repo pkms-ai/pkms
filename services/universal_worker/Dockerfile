@@ -8,7 +8,7 @@
 # PYTHON-BASE
 # Sets up all our shared environment variables
 ################################
-FROM python:3.11-slim as python-base
+FROM python:3.11-slim AS python-base
 
     # python
 ENV PYTHONUNBUFFERED=1 \
@@ -68,7 +68,7 @@ RUN apt-get update && apt-get install -y \
 # BUILDER-BASE
 # Used to build deps + create our virtual environment
 ################################
-FROM python-base as builder-base
+FROM python-base AS builder-base
 RUN apt-get update \
     && apt-get install --no-install-recommends -y \
         # deps for installing poetry
@@ -96,7 +96,7 @@ RUN --mount=type=cache,target=/root/.cache \
 # DEVELOPMENT
 # Image used during development / testing
 ################################
-FROM python-base as development
+FROM python-base AS development
 ENV FASTAPI_ENV=development
 WORKDIR $PYSETUP_PATH
 
@@ -124,7 +124,7 @@ CMD ["python", "-m", "universal_worker.main"]
 # PRODUCTION
 # Final image used for runtime
 ################################
-FROM python-base as production
+FROM python-base AS production
 ENV FASTAPI_ENV=production
 COPY --from=builder-base $PYSETUP_PATH $PYSETUP_PATH
 

@@ -49,22 +49,6 @@ content_forwarders = {
 class ClassifierProcessor(BaseProcessor):
     """Processor class for handling crawling content."""
 
-    @property
-    def input_queue(self) -> str:
-        return settings.CLASSIFY_QUEUE
-
-    @property
-    def exchange_queue(self) -> str:
-        return "summarizer_exchange"
-
-    @property
-    def output_queues(self) -> List[str]:
-        return [settings.CRAWL_QUEUE, settings.TRANSCRIBE_QUEUE]
-
-    @property
-    def error_queue(self) -> str:
-        return settings.ERROR_QUEUE
-
     async def process_content(
         self, content: Dict[str, Any]
     ) -> Tuple[str, Dict[str, str | list[str]]]:
