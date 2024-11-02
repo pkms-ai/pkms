@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     YOUTUBE_API_KEY: str = "youtube_1234567890"
     TELEGRAM_BOT_TOKEN: str = "telegram_1234567890"
     RABBITMQ_URL: str = "amqp://guest:guest@localhost:5672/"
+    CRAWL4AI_URL: str = "http://crawl4ai-fastapi:8000"
     CORS_ORIGINS: List[str] = ["http://localhost:3000"]
     ENVIRONMENT: str = "development"
     PORT: int = 8000

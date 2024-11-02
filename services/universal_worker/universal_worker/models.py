@@ -55,6 +55,11 @@ class Metadata(BaseModel):
     keywords: Optional[str] = None
 
 
+class CrawlResponse(BaseModel):
+    content: str
+    metadata: Metadata
+
+
 class ContentStatus(str, Enum):
     SUBMITTED = "submitted"
     CLASSIFIED = "classified"

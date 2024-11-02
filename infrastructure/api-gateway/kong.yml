@@ -2,13 +2,6 @@ _format_version: "2.1"
 _transform: true
 
 services:
-  - name: adminer
-    url: http://adminer:8080
-    routes:
-      - name: adminer-route
-        paths:
-          - /adminer
-
   - name: db-service
     url: http://db-service:8000
     routes:
