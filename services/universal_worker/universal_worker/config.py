@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8", "extra": "allow"}
 
     @property
-    def DB_SERVICE_URL(self) -> str:
+    def DB_MANAGER_URL(self) -> str:
         return f"http://{self.API_GATEWAY_HOST}:{self.API_GATEWAY_PORT}/api/db"
 
     @property

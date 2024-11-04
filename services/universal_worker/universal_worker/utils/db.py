@@ -26,12 +26,12 @@ class InsertContent(BaseModel):
 
 async def check_url_exists(url: str) -> bool:
     """
-    Check if the URL exists by calling the db-service API.
+    Check if the URL exists by calling the db-manager API.
     """
     async with httpx.AsyncClient() as client:
         try:
             response = await client.post(
-                f"{settings.DB_SERVICE_URL}/contents/check_url", json={"url": url}
+                f"{settings.DB_MANAGER_URL}/contents/check_url", json={"url": url}
             )
             response.raise_for_status()
             return response.json().get("exists", False)

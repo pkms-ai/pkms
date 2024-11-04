@@ -13,7 +13,7 @@ services:
     image: kong:latest
     restart: unless-stopped
     depends_on:
-      - content-submission-service
+      - content-manager
     networks:
       - pkms-network
     environment:
@@ -35,7 +35,7 @@ services:
     volumes:
       - ./infrastructure/api-gateway/kong.yml:/usr/local/kong/declarative/kong.yml:ro
 
-  content-submission-service:
+  content-manager:
     image: content-manager:latest
     restart: unless-stopped
     env_file:
@@ -43,7 +43,7 @@ services:
     depends_on:
       message-queue:
         condition: service_healthy
-      db-service:
+      db-manager:
         condition: service_healthy
     networks:
       - pkms-network
@@ -157,7 +157,7 @@ services:
     networks:
       - pkms-network
 
-  db-service:
+  db-manager:
     image: db-manager:latest
     restart: unless-stopped
     env_file:
