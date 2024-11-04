@@ -68,7 +68,7 @@ async def insert_to_db(content: Content) -> dict:
 
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{settings.DB_SERVICE_URL}/contents",
+                f"{settings.DB_MANAGER_URL}/contents",
                 json=insert_content.model_dump(),  # Ensure correct method based on Pydantic version
             )
             response.raise_for_status()  # Raise exception for 4xx and 5xx responses
