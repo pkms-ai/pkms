@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Callable, Coroutine, Dict, List, Optional, Tuple
+from typing import Any, Callable, Coroutine, Dict, Optional, Tuple
 
 from aio_pika.abc import AbstractIncomingMessage
 
@@ -12,8 +12,15 @@ from universal_worker.exceptions import (
     ContentAlreadyExistsError,
     ContentProcessingError,
 )
-from universal_worker.models import Content, ContentType, SubmittedContent
+from universal_worker.models import (
+    Content,
+    ContentType,
+    NotificationMessage,
+    NotificationType,
+    SubmittedContent,
+)
 from universal_worker.utils.db import check_url_exists
+from universal_worker.utils.notifier import notify
 
 from .classifier import classify_content
 
@@ -64,6 +71,15 @@ class ClassifierProcessor(BaseProcessor):
 
             # Check if the URL already exists in the database
             if await check_url_exists(classified_content.url):
+                await notify(
+                    NotificationMessage(
+                        url=classified_content.url,
+                        status=classified_content.status,
+                        notification_type=NotificationType.INFO,
+                        source=classified_content.source,
+                        message="URL already exists in the database.",
+                    )
+                )
                 raise ContentAlreadyExistsError(
                     f"Content with URL {classified_content.url} already exists in the database"
                 )

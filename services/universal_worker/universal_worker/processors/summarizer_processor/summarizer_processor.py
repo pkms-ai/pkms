@@ -5,9 +5,13 @@ from aio_pika.abc import AbstractIncomingMessage
 
 # from .models import Content
 from pydantic import ValidationError
+from workflow_base import BaseProcessor
 
 from universal_worker.config import settings
-from universal_worker.exceptions import ContentProcessingError
+from universal_worker.exceptions import (
+    ContentAlreadyExistsError,
+    ContentProcessingError,
+)
 from universal_worker.models import (
     Content,
     ContentStatus,
@@ -15,10 +19,9 @@ from universal_worker.models import (
     NotificationMessage,
     NotificationType,
 )
-from workflow_base import BaseProcessor
 from universal_worker.utils.db import check_url_exists, insert_to_db
-from universal_worker.utils.url import clean_url
 from universal_worker.utils.notifier import notify
+from universal_worker.utils.url import clean_url
 
 from .summarizer import summarize_content
 
@@ -50,7 +53,17 @@ class SummarizerProcessor(BaseProcessor):
             # check if the URL already exists in the database
             if await check_url_exists(url):
                 logger.info(f"URL already exists in the database: {url}")
-                raise ContentProcessingError("URL already exists in the database")
+
+                await notify(
+                    NotificationMessage(
+                        url=input_content.url,
+                        status=input_content.status,
+                        notification_type=NotificationType.INFO,
+                        source=input_content.source,
+                        message="URL already exists in the database.",
+                    )
+                )
+                raise ContentAlreadyExistsError("URL already exists in the database")
 
             input_content.summary = await summarize_content(input_content)
             input_content.status = ContentStatus.SUMMARIZED
@@ -86,4 +99,16 @@ class SummarizerProcessor(BaseProcessor):
             Coroutine[Any, Any, None],
         ]
     ]:
-        return None
+        async def error_handler(
+            error: Exception,
+            content: Optional[Dict[str, Any]],
+            message: AbstractIncomingMessage,
+        ) -> None:
+            if isinstance(error, ContentAlreadyExistsError):
+                logger.info(f"Content already exists: {str(error)}")
+                await message.ack()
+            else:
+                # Re-raise the exception to let the default handler manage it
+                raise error
+
+        return error_handler
