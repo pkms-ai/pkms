@@ -32,7 +32,7 @@ plugins:
     config:
       hide_credentials: true
   - name: key-auth
-    service: content-submission-service
+    service: content-manager
     config:
       key_names:
         - apikey
